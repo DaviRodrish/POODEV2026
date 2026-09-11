@@ -1,0 +1,186 @@
+\documentclass[12pt,a4paper]{report}
+
+% Pacotes básicos
+\usepackage{mathptmx}
+\usepackage{indentfirst}
+\usepackage[utf8]{inputenc}    % Permite acentuação
+\usepackage[T1]{fontenc}       % Codificação correta das fontes
+\usepackage[brazil]{babel}     % Idioma português
+\usepackage{geometry}          % Configuração da página
+\geometry{a4paper, top=2cm, bottom=2cm, left=2.5cm, right=2.5cm}
+\usepackage{setspace}          % Espaçamento entre linhas
+\usepackage{graphicx}          % Inserir imagens
+\usepackage{hyperref}          % Links clicáveis
+\usepackage{titlesec}          % Personalização dos títulos
+\usepackage{array}             % Tabelas mais flexíveis
+\usepackage{longtable}         % Tabelas longas
+\usepackage{tikz}
+\usetikzlibrary{positioning,shapes.geometric}
+
+% Configurações do documento
+\onehalfspacing               % Espaçamento 1.5
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    pdftitle={Universidade Estadual do Norte Fluminense Darcy Ribeiro},
+    pdfauthor={Davi Rodrigues Soares Machado//Paulo Fernando Pereira Junior},
+}
+
+\begin{document}
+\begin{titlepage}
+    \begin{center}
+        
+        \includegraphics[scale=0.2]{imagens/uenf1.png}\\[1cm]
+       
+        {\large CENTRO DE CIÊNCIAS E TECNOLOGIAS}\\
+        {\large LCC - Laboratório de Ciência da Computação}\\[4cm]
+
+        {\large \textbf{Davi Rodrigues Soares Machado}}\\
+        {\large \textbf{Paulo Fernando Pereira Junior}}\\[4cm]
+
+        {\large \textbf{Projeto da disciplina Paradigmas Orientados à Objetos para Desenvolvimento de Software: \\[2cm] Catálogo Iterativo de Veiculos}}\\[4cm]
+
+        Campos dos Goytacazes - RJ\\
+        \today
+    \end{center}
+\end{titlepage}
+
+
+% Sumário
+\tableofcontents
+\newpage
+
+
+% Introdução -----------------------------------------------------------------------
+\chapter{Introdução}
+
+% Objetivos -------------------------------------------------------------------------
+\chapter{Objetivos}
+
+\subsection*{Principais funcionalidades}
+	%paragraph{Automatização da grade horária:} Com o objetivo de reduzir os possíveis erros humanos na alocação de salas e professores, o sistema ficará responsável pela melhor distribuição dentro de cada unidade escolar, auxiliado do coordenador de cada unidade escolar.
+	%\paragraph{Oferecer consultas personalizadas:} Cada usuário poderá acessar o sistema com o intuito de visualizar a agenda escolar baseada em filtros como: por aluno, professor, turma ou sala. Será possível acompanhar o cronograma escolar e acessar boletins de alunos, que serão gerados automaticamente após o professor responsável lançar as notas das disciplinas.
+	%\paragraph{Acesso disponível em multi plataformas:} O sistema poderá ser acessado por qualquer dispositivo com acesso a intert via navegador web ou mobile.
+
+
+ 
+\section{Público Alvo}
+
+
+\section{Orçamento}
+No orçamento abaixo foram levados em consideração o período de quatro meses de desenvolvimento do sistema, somado com o periodo de uso de um ano seguido.
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width = \linewidth]{imagens/orcamento.png}
+	\label{Orçamento}
+	\caption{Orçamento}
+\end{figure}
+
+
+
+% Levantamento de Requisitos----------------------------------------------------------
+\chapter{Levantamento de Requisitos}
+Durante a primeira reunião, foram levantados alguns requisitos que foram listados abaixo: 
+\section{Requisitos Funcionais}
+	\begin{itemize}
+    \item RF01: 
+    \item RF02: 
+    \item RF03: 
+    \item RF04: 
+    \item RF05: 
+    \item RF06: 
+    \item RF07: 
+    \item RF08: 
+    \item RF09: 
+    \item RF10: 
+    \item RF11: 
+    \item RF12: 
+	\end{itemize}
+
+\section{Requisitos Não Funcionais}
+	\begin{itemize}
+    \item RNF01: O sistema deve ser responsivo e rápido.
+    \item RNF02: O sistema deve apresentar telas intuitivas com navegação simples.
+    \item RNF03: O sistema deve suportar pelo menos 200 usuários simultâneos.
+    \item RNF04: O sistema deve criptografar senhas dos usuários.
+    \item RNF05: O sistema deve implementar níveis de permissão de acordo com o perfil do usuário.
+    \item RNF06: O sistema deve ser capaz de aumentar a capacidade de usuários e dados sem degradação significativa de desempenho.
+    
+	\end{itemize}
+
+% Casos de Uso ----------------------------------------------------------------------
+
+\chapter{Diagramas}
+\label{sec:Diagrama}
+\section{Diagrama de Caso de Uso}
+
+Seguindo o diagrama abaixo, temos os principais casos de uso do sistema de agenda escolar. Começamos com as entidades: Aluno, Professor, Coordenador,Secretário e Pró Reitor, em que cada uma terá acesso a funcionalidades específicas dentro do sistema. Por exemplo, somente os professores poderão lançar e editar as notas dos alunos.
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[scale=0.5]{imagens/casodeuso.png}
+	\caption{Diagrama de Casos de Uso}
+	\label{Diagrama de Casos de Uso}
+\end{figure}
+
+\section{Diagrama UML}
+No diagrama UML, cada uma das classes é projetada com seus respectivos atributos e métodos.
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width = \linewidth]{imagens/uml.png}
+	\label{Diagrama UML}
+	\caption{Diagrama UML}
+\end{figure}
+\newpage
+\section{Diagrama Entidade Relacionamento}
+\begin{figure}[h!]
+\centering
+\includegraphics[width=\linewidth]{imagens/der.png}
+\label{Diagrama Entidade-Relacionamento}
+\caption{Diagrama Entidade-Relacionamento}
+\end{figure}
+
+% Arquitetura do Sistema -------------------------------------------------------------
+\chapter{Arquitetura do Sistema}
+\paragraph{Visão geral} 
+
+\paragraph{Fluxo de comunicação}
+
+
+
+% Tecnologias Utilizadas -------------------------------------------------------------
+\chapter{Tecnologias Utilizadas}
+
+\begin{itemize}
+	\item \textbf{Back-end:} A linguagem escolhida para o desenvolvimento foi a linguagem Python.
+	\item \textbf{Front-end:} O front-end servirá como ferramenta de visualização para o sistema e será desenvolvido principalmente com React.
+	\item \textbf{Banco de Dados:} MongoDB
+	\item \textbf{Controle de Versão:} Todo o processo será documentado e versionado dentro da plataforma github, que poderá ser acessada através do \href{https://github.com/DaviRodrish/POODEV2026}{Repositório Github}
+\end{itemize}
+
+% Calendário -------------------------------------------------------------------------
+\chapter{Cronograma}
+\label{sec:cronograma}
+
+Para melhor entendimento, o cronograma de desenvolvimento foi dividido em dois bimestres, sendo o primeiro focado em backend e integração com banco de dados, e o segundo focado no frontend e nos testes de aplicação. Em ambas etapas, no final de cada semana do mês, uma reunião com cliente irá acontecer, onde será mostrado cada nova parte incluída no sistema.  
+
+\vspace{2cm}
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width = \linewidth]{imagens/Calendario1bi.png}
+\caption{Cronograma do Primeiro Bimestre de Desenvolvimento}
+\label{Cronograma do Primeiro Bimestre de Desenvolvimento}
+\end{figure}
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width = \linewidth]{imagens/Calendario2bi.png}
+\caption{Cronograma do Segundo Bimestre de Desenvolvimento}
+\label{Cronograma do Segundo Bimestre de Desenvolvimento}
+\end{figure}
+
+
+\end{document}
