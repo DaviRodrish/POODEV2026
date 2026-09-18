@@ -39,7 +39,7 @@
         {\large \textbf{Davi Rodrigues Soares Machado}}\\
         {\large \textbf{Paulo Fernando Pereira Junior}}\\[4cm]
 
-        {\large \textbf{Projeto da disciplina Paradigmas Orientados à Objetos para Desenvolvimento de Software: \\[2cm] Catálogo Iterativo de Veiculos}}\\[4cm]
+        {\large \textbf{Projeto da disciplina Paradigmas Orientados à Objetos para Desenvolvimento de Software: \\[2cm] Sistema de Aluguel de Carros}}\\[4cm]
 
         Campos dos Goytacazes - RJ\\
         \today
@@ -54,52 +54,241 @@
 
 % Introdução -----------------------------------------------------------------------
 \chapter{Introdução}
+O projeto consiste no desenvolvimento de um sistema para gerenciamento e
+aluguel de veículos. A plataforma permitirá a interação entre clientes e agências de aluguel,
+possibilitando a consulta de veículos, realização de reservas, pagamentos, acompanhamento do
+aluguel e gerenciamento da frota.
+
+Além das funcionalidades tradicionais, o projeto busca incorporar recursos de automação, como a identificação da quilometragem do veículo a partir de
+fotografias, controle do estado do veículo, acompanhamento de custos operacionais e emissão
+de alertas relacionados à manutenção e desvalorização.
 
 % Objetivos -------------------------------------------------------------------------
 \chapter{Objetivos}
 
-\subsection*{Principais funcionalidades}
-	%paragraph{Automatização da grade horária:} Com o objetivo de reduzir os possíveis erros humanos na alocação de salas e professores, o sistema ficará responsável pela melhor distribuição dentro de cada unidade escolar, auxiliado do coordenador de cada unidade escolar.
-	%\paragraph{Oferecer consultas personalizadas:} Cada usuário poderá acessar o sistema com o intuito de visualizar a agenda escolar baseada em filtros como: por aluno, professor, turma ou sala. Será possível acompanhar o cronograma escolar e acessar boletins de alunos, que serão gerados automaticamente após o professor responsável lançar as notas das disciplinas.
-	%\paragraph{Acesso disponível em multi plataformas:} O sistema poderá ser acessado por qualquer dispositivo com acesso a intert via navegador web ou mobile.
+\subsection*{Objetivo Geral}
+Desenvolver um sistema para gerenciamento de uma agência de aluguel de veículos, permitindo controlar clientes, veículos da agência, reservas e pagamentos, manutenções e demais processos necessários para uma locação de veículo.
+    
+
+	\paragraph{Objetivos específicos}
+    \begin{itemize}
+
+    \item Permitir o cadastro e a autenticação de clientes,
+    motoristas e agências;
+
+    \item Permitir a consulta e reserva de veículos disponíveis;
+
+    \item Diferenciar reservas de veículos novos e usados;
+
+    \item Permitir o registro das condições do veículo por meio
+    de fotografias;
+
+    \item Registrar e controlar a quilometragem dos veículos;
+
+    \item Detectar automaticamente a quilometragem apresentada
+    em fotografias do painel do veículo;
+
+    \item Permitir o registro do nível de combustível na retirada
+    e na devolução;
+
+    \item Disponibilizar pagamentos por PIX e cartão de crédito;
+
+    \item Permitir a realização de entregas e devoluções fora da
+    agência mediante cobrança adicional;
+
+    \item Manter o histórico de aluguéis dos usuários e veículos;
+
+    \item Disponibilizar informações relacionadas à manutenção
+    dos veículos;
+
+    \item Calcular o custo operacional dos veículos;
+
+    \item Estimar a poluição gerada pela utilização dos veículos;
+
+    \item Permitir o acionamento de um botão de emergência do seguro, enviando informações como localização e possíveis defeitos;
+
+    \item Gerar alertas relacionados à desvalorização dos veículos;
+
+    \item Aplicar regras de bloqueio de usuários de acordo com
+    as condições definidas pela agência.
+
+\end{itemize}
+
+    
+\chapter{Usuários do Sistema}
+
+O sistema contará com diferentes perfis de usuários, cada um
+com diferentes permissões e responsabilidades.
+
+\section{Cliente / Locador}
+
+O cliente poderá utilizar o sistema para consultar veículos,
+realizar reservas, efetuar pagamentos e acompanhar seus aluguéis.
+
+Entre suas principais funcionalidades estão:
+
+\begin{itemize}
+
+    \item Criar uma conta;
+    \item Realizar login;
+    \item Cadastrar informações pessoais;
+    \item Enviar fotografia da CNH;
+    \item Consultar veículos disponíveis;
+    \item Realizar reservas;
+    \item Efetuar pagamentos;
+    \item Cadastrar motorista secundário;
+    \item Consultar o histórico de aluguéis;
+    \item Acionar o seguro em situações de emergência;
+    \item Informar problemas encontrados no veículo.
+
+\end{itemize}
+
+\section{Agência}
+
+A agência será responsável pelo gerenciamento da frota e dos
+aluguéis.
+
+Suas principais funcionalidades serão:
+
+\begin{itemize}
+
+    \item Cadastrar e gerenciar veículos;
+    \item Consultar reservas;
+    \item Gerenciar retiradas e devoluções;
+    \item Registrar fotografias dos veículos;
+    \item Registrar quilometragem e combustível;
+    \item Acompanhar manutenções;
+    \item Registrar problemas dos veículos;
+    \item Consultar custos operacionais;
+    \item Acompanhar a desvalorização dos veículos;
+    \item Gerenciar usuários bloqueados;
+    \item Acompanhar situações de emergência.
+
+\end{itemize}
 
 
- 
-\section{Público Alvo}
-
-
-
-
-
-% Levantamento de Requisitos----------------------------------------------------------
 \chapter{Levantamento de Requisitos}
-Durante a primeira reunião, foram levantados alguns requisitos que foram listados abaixo: 
+
+Durante a reunião inicial com o stakeholder, foram levantados
+requisitos relacionados às funcionalidades de aluguel,
+gerenciamento de veículos, pagamentos, manutenção e segurança.
+
 \section{Requisitos Funcionais}
-	\begin{itemize}
-    \item RF01: 
-    \item RF02: 
-    \item RF03: 
-    \item RF04: 
-    \item RF05: 
-    \item RF06: 
-    \item RF07: 
-    \item RF08: 
-    \item RF09: 
-    \item RF10: 
-    \item RF11: 
-    \item RF12: 
-	\end{itemize}
+\begin{itemize}
+
+    \item \textbf{RF01:} O sistema deve permitir a autenticação
+    dos usuários.
+
+    \item \textbf{RF02:} O sistema deve permitir o cadastro de
+    motoristas secundários.
+
+    \item \textbf{RF03:} O sistema deve permitir o envio de uma
+    fotografia da CNH durante o cadastro.
+
+    \item \textbf{RF04:} O sistema deve realizar a validação do
+    CPF informado pelo usuário.
+
+    \item \textbf{RF05:} O sistema deve diferenciar veículos
+    novos e usados.
+
+    \item \textbf{RF06:} O sistema deve permitir que o cliente
+    consulte os veículos disponíveis para aluguel.
+
+    \item \textbf{RF07:} O sistema deve permitir que o cliente
+    realize reservas de veículos.
+
+    \item \textbf{RF08:} O sistema deve calcular o valor do
+    aluguel de acordo com as condições da reserva.
+
+    \item \textbf{RF09:} O sistema deve permitir pagamentos por
+    PIX e Cartão de Crédito.
+
+    \item \textbf{RF10:} O sistema deve permitir a retirada e a
+    devolução do veículo em locais diferentes da agência.
+
+    \item \textbf{RF11:} O sistema deve calcular um adicional
+    relacionado à devolução fora da agência.
+
+    \item \textbf{RF12:} O sistema deve permitir o registro de
+    fotografias do veículo durante a retirada e a devolução.
+
+    \item \textbf{RF13:} O sistema deve permitir o registro da
+    quilometragem do veículo.
+
+    \item \textbf{RF14:} O sistema deve permitir o registro do
+    nível de combustível do veículo.
+
+    \item \textbf{RF15:} O sistema deve detectar automaticamente
+    a quilometragem apresentada em uma fotografia do painel.
+
+    \item \textbf{RF16:} O sistema deve permitir o registro de
+    problemas ou danos identificados no veículo.
+
+    \item \textbf{RF17:} O sistema deve permitir que o usuário
+    consulte seu histórico de aluguéis.
+
+    \item \textbf{RF18:} O sistema deve manter o histórico de
+    utilização dos veículos.
+
+    \item \textbf{RF19:} O sistema deve disponibilizar um painel
+    de manutenção para a agência.
+
+    \item \textbf{RF20:} O sistema deve registrar os custos
+    operacionais dos veículos.
+
+    \item \textbf{RF21:} O sistema deve calcular uma estimativa
+    de poluição associada à utilização do veículo.
+
+    \item \textbf{RF22:} O sistema deve permitir o acionamento
+    de emergência.
+
+    \item \textbf{RF23:} O sistema deve registrar a localização
+    do usuário durante o acionamento de uma emergência.
+
+    \item \textbf{RF24:} O sistema deve permitir a seleção ou
+    descrição do tipo de emergência.
+
+    \item \textbf{RF25:} O sistema deve permitir o acionamento
+    do seguro a partir de um botão de emergência.
+
+    \item \textbf{RF26:} O sistema deve gerar um alerta quando a
+    desvalorização do veículo atingir ou ultrapassar 15\% do
+    valor FIPE de um ano para o outro.
+
+    \item \textbf{RF27:} O sistema deve permitir o bloqueio
+    temporário de usuários de acordo com as regras de utilização
+    definidas pela agência.
+
+
+
+\end{itemize}
+
+% =========================================================
+% 6. REQUISITOS NÃO FUNCIONAIS
+% =========================================================
 
 \section{Requisitos Não Funcionais}
-	\begin{itemize}
-    \item RNF01: O sistema deve ser responsivo e rápido.
-    \item RNF02: O sistema deve apresentar telas intuitivas com navegação simples.
-    \item RNF03: O sistema deve suportar pelo menos 200 usuários simultâneos.
-    \item RNF04: O sistema deve criptografar senhas dos usuários.
-    \item RNF05: O sistema deve implementar níveis de permissão de acordo com o perfil do usuário.
-    \item RNF06: O sistema deve ser capaz de aumentar a capacidade de usuários e dados sem degradação significativa de desempenho.
-    
-	\end{itemize}
+
+\begin{itemize}
+
+    \item \textbf{RNF01:} O sistema deve possuir uma interface
+    responsiva, permitindo seu acesso por diferentes tamanhos
+    de tela.
+
+    \item \textbf{RNF02:} O sistema deve apresentar uma
+    interface intuitiva e de fácil utilização.
+
+    \item \textbf{RNF03:} O sistema deve utilizar autenticação
+    para controlar o acesso às funcionalidades restritas.
+
+    \item \textbf{RNF04:} As senhas dos usuários devem ser
+    armazenadas de forma segura, utilizando mecanismos
+    apropriados de criptografia ou hash.
+
+    \item \textbf{RNF05:} O sistema deve implementar níveis de
+    permissão de acordo com o perfil do usuário.
+
+\end{itemize}
 
 % Casos de Uso ----------------------------------------------------------------------
 
