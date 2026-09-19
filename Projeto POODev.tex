@@ -63,6 +63,8 @@ Além das funcionalidades tradicionais, o projeto busca incorporar recursos de a
 fotografias, controle do estado do veículo, acompanhamento de custos operacionais e emissão
 de alertas relacionados à manutenção e desvalorização.
 
+O andamento do projeto estará disponível no \href{https://github.com/DaviRodrish/POODEV2026}{Repositório Github}.
+
 % Objetivos -------------------------------------------------------------------------
 \chapter{Objetivos}
 
@@ -304,34 +306,172 @@ Seguindo o diagrama abaixo, temos os principais casos de uso do sistema
 	\caption{Diagrama de Casos de Uso}
 	\label{Diagrama de Casos de Uso}
 \end{figure}
+\newpage
 
 \section{Diagrama UML}
 No diagrama UML, cada uma das classes é projetada com seus respectivos atributos e métodos.
 
-\begin{figure}[!h]
+\begin{figure}[h!]
     \centering
-    \includegraphics[width = 1.1\linewidth]{imagens/uml.png}
+    \includegraphics[width =\linewidth]{imagens/uml.png}
     \caption{Diagrama UML}
     \label{fig:diagrama_uml}
 \end{figure}
 \newpage
 
-\section{Diagrama Entidade Relacionamento}
-\begin{figure}[h!]
-\centering
-\includegraphics[width=\linewidth]{imagens/ER.png}
-\label{Diagrama Entidade-Relacionamento}
-\caption{Diagrama Entidade-Relacionamento}
-\end{figure}
+% =========================================================
+% ARQUITETURA DO SISTEMA
+% =========================================================
 
-% Arquitetura do Sistema -------------------------------------------------------------
 \chapter{Arquitetura do Sistema}
-\paragraph{Visão geral} 
 
-\paragraph{Fluxo de comunicação}
+\section{Visão Geral}
 
+O sistema será desenvolvido seguindo uma arquitetura baseada na
+separação entre as camadas de apresentação, aplicação e
+persistência de dados. Essa organização tem como objetivo
+facilitar a manutenção, a evolução e a integração entre os
+diferentes componentes do sistema.
 
+A camada de apresentação será responsável pela interface com os
+usuários e será desenvolvida utilizando React. Por meio dela,
+clientes e funcionários da agência poderão acessar as
+funcionalidades disponibilizadas pelo sistema, como consulta de
+veículos, realização de reservas, acompanhamento de aluguéis,
+pagamentos e gerenciamento da frota.
 
+A camada de aplicação será desenvolvida em Python e será
+responsável pelo processamento das requisições, autenticação dos usuários e gerenciamento
+das operações relacionadas aos veículos, reservas, pagamentos,
+manutenções e demais funcionalidades do sistema.
+
+A persistência dos dados será realizada utilizando MongoDB,
+armazenando informações relacionadas aos
+usuários, veículos, reservas, aluguéis, pagamentos, inspeções,
+manutenções e demais registros do sistema.
+
+A comunicação entre o front-end e o back-end será realizada por
+meio de uma API, permitindo que a interface desenvolvida em
+React envie requisições ao servidor e receba os dados necessários
+para apresentar as informações aos usuários.
+
+A arquitetura geral do sistema pode ser representada da
+seguinte forma:
+
+\begin{center}
+
+\begin{tikzpicture}[
+    node distance=3cm,
+    every node/.style={
+        draw,
+        rounded corners,
+        align=center,
+        minimum width=4cm,
+        minimum height=1.2cm
+    }
+]
+
+\node (frontend) {Front-end\\React};
+
+\node (backend) [right=of frontend] {Back-end\\Python};
+
+\node (database) [right=of backend] {Banco de Dados\\MongoDB};
+
+\draw[<->, thick] (frontend) -- 
+node[above,draw=none] {API} (backend);
+
+\draw[<->, thick] (backend) -- 
+node[above,draw=none] {Dados} (database);
+
+\end{tikzpicture}
+
+\end{center}
+
+\section{Fluxo de Comunicação}
+
+O fluxo de comunicação do sistema ocorrerá principalmente entre
+o front-end, o back-end e o banco de dados. Quando o usuário
+realizar uma ação na interface, o front-end enviará uma
+requisição para a API disponibilizada pelo back-end.
+
+O back-end será responsável por receber a requisição, verificar
+as informações fornecidas, aplicar as regras de negócio
+correspondentes e, quando necessário, realizar operações no
+banco de dados.
+
+Após o processamento da requisição, o back-end retornará uma
+resposta para o front-end, normalmente utilizando o formato
+JSON. O front-end utilizará essas informações para atualizar a
+interface e apresentar o resultado ao usuário.
+
+De forma simplificada, o fluxo pode ser representado pelas
+seguintes etapas:
+
+\begin{enumerate}
+
+    \item O usuário realiza uma ação na interface do sistema;
+
+    \item O front-end React identifica a ação e envia uma
+    requisição para a API;
+
+    \item O back-end Python recebe e processa a requisição;
+
+    \item Quando necessário, o back-end realiza operações de
+    consulta, inserção, alteração ou exclusão no banco;
+
+    \item O banco retorna os dados solicitados ou confirma a
+    operação realizada;
+
+    \item O back-end processa o resultado e envia uma resposta
+    para o front-end;
+
+    \item O React recebe a resposta e atualiza a interface
+    apresentada ao usuário.
+
+\end{enumerate}
+
+Por exemplo, durante uma reserva de veículo, o fluxo poderá
+ocorrer da seguinte maneira:
+
+\begin{center}
+
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    every node/.style={
+        draw,
+        rounded corners,
+        align=center,
+        minimum width=4.2cm,
+        minimum height=1cm
+    }
+]
+
+\node (a) {Usuário\\realiza reserva};
+
+\node (b) [below=of a] {Front-end\\React};
+
+\node (c) [below=of b] {API\\Back-end Python};
+
+\node (d) [below=of c] {MongoDB\\verificação de disponibilidade};
+
+\node (e) [below=of d] {Back-end\\processamento da reserva};
+
+\node (f) [below=of e] {Front-end\\confirmação da reserva};
+
+\draw[->, thick] (a) -- (b);
+\draw[->, thick] (b) -- (c);
+\draw[->, thick] (c) -- (d);
+\draw[->, thick] (d) -- (e);
+\draw[->, thick] (e) -- (f);
+
+\end{tikzpicture}
+
+\end{center}
+
+Dessa forma, a separação entre as camadas permite que cada
+componente possua responsabilidades específicas, reduzindo o
+acoplamento entre a interface, as regras de negócio e o
+armazenamento dos dados.
 % Tecnologias Utilizadas -------------------------------------------------------------
 \chapter{Tecnologias Utilizadas}
 
