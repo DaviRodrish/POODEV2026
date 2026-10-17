@@ -9,8 +9,14 @@ class Combustivel(Enum):
     DIESEL = "DIESEL"
     FLEX = "FLEX"
     ELETRICO = "ELETRICO"
+    GNV = "GNV"
+    HIBRIDO = "HIBRIDO"
 
 class Status(Enum):
     DISPONIVEL = "DISPONIVEL"
     LOCADO = "LOCADO"
     MANUTENCAO = "MANUTENCAO"
+
+class StatusCliente(Enum):
+    ATIVO = "ATIVO"
+    BLOQUEADO = "BLOQUEADO"

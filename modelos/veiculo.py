@@ -17,6 +17,7 @@ class Veiculo:
         self.modelo = modelo
         self.ano = ano
         self.status = Status.DISPONIVEL
+        self.combustivel = 1.0
 
         if fipeP <= 0 or fipeA <= 0:
             raise ValorFipeError("Valor da fipe tem que ser maior que 0")
@@ -28,6 +29,7 @@ class Veiculo:
         if quilometragem < 0:
             raise OdometroError("Quilometragem tem que ser maior/igual que 0")
         self._quilometragem = quilometragem
+        self.km_rev = 0
 
     @property
     def quilometragem(self):
@@ -57,3 +59,14 @@ class Veiculo:
 
     def fipeAlert(self):
         return self.deprec() >= 0.15
+
+    def fazerRev(self):
+        self.km_rev = self._quilometragem
+
+    def rev(self):
+        return (self.quilometragem - self.km_rev) >= 10000
+
+    def emissao(self, km, est):
+        return est.calc(km)
+
+    
