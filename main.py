@@ -13,3 +13,21 @@ print(v.quilometragem)
 
 v.abastecer(0.5)
 print(v.combustivel)
+
+from modelos.cliente import Cliente
+
+print("\n--- TESTE CLIENTE ---")
+c = Cliente("Davi", "davi@email.com", "529.982.247-25", "12345678900")
+print("Cliente:", c.nome)
+print("CPF:", c.cpf.formatado())
+print("CNH:", c.cnh)
+print("Status:", c.status)
+print("Pode alugar?", c.pode_alugar())
+
+c.bloquear("Documento pendente")
+print("Apos bloqueio:", c.status, "| Motivo:", c.motivo)
+print("Pode alugar?", c.pode_alugar())
+
+c.desbloquear()
+print("Apos desbloqueio:", c.status)
+print("Pode alugar?", c.pode_alugar())
