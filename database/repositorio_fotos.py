@@ -3,13 +3,10 @@ from datetime import datetime
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-# Carrega as variáveis do ficheiro .env para o ambiente do Python
 load_dotenv()
 
-# Lê a URI de forma segura a partir da variável de ambiente
 MONGO_URI = os.getenv("MONGO_URI")
 
-# Inicializamos as variáveis de conexão como None por segurança
 db_mongo = None
 colecao_fotos = None
 

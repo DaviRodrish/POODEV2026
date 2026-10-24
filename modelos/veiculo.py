@@ -1,78 +1,34 @@
-import datetime
-from database.conexao_postgres import Base
-from modelos.enums import Combustivel, Status, Veiculo as TipoVeiculo
-from sqlalchemy import Column, Float, Integer, String, Enum as SqlEnum
+from modelos.fipe import ServicoFipe
 
+class VeiculoModel:
+    def __init__(self, placa, marca_id, modelo_id, ano_id):
+        self.placa = placa
+        self.marca_id = marca_id
+        self.modelo_id = modelo_id
+        self.ano_id = ano_id
 
-class VeiculoModel(Base):
-  __tablename__ = "veiculos"
+        # Busca automática dos dados oficiais na FIPE ao instanciar o veículo
+        dados_fipe = ServicoFipe.consultar_preco(marca_id, modelo_id, ano_id)
 
-  id = Column(Integer, primary_key=True, autoincrement=True)
-  placa = Column("placa", String, unique=True, nullable=False)
-  marca = Column(String, nullable=False)
-  modelo = Column(String, nullable=False)
-  ano = Column(Integer, nullable=False)
-  status = Column(SqlEnum(Status), default=Status.DISPONIVEL, nullable=False)
-  combustivel_nivel = Column(Float, default=1.0, nullable=False)
-  fipeP = Column(Float, nullable=False)
-  fipeA = Column(Float, nullable=False)
-  _quilometragem = Column("quilometragem", Integer, nullable=False)
-  km_rev = Column(Integer, default=0, nullable=False)
+        if dados_fipe:
+            self.nome_modelo = dados_fipe.get("Modelo")
+            self.marca = dados_fipe.get("Marca")
+            self.ano_modelo = dados_fipe.get("AnoModelo")
+            self.combustivel = dados_fipe.get("Combustivel")
+            self.valor_fipe_texto = dados_fipe.get("Valor") # Ex: "R$ 45.890,00"
+            self.valor_mercado = self._converter_valor_para_float(self.valor_fipe_texto)
+        else:
+            raise ValueError("Não foi possível validar os dados do veículo na FIPE.")
 
-  def __init__(
-      self, placa, marca, modelo, ano, quilometragem, combustivel, fipeP, fipeA
-  ):
-    self.placa = placa
-    self.marca = marca
-    self.modelo = modelo
-    self.ano = ano
-    self.status = Status.DISPONIVEL
-    self.combustivel_nivel = 1.0
+    def _converter_valor_para_float(self, valor_str):
+        """Converte a string de moeda da FIPE para float para uso em cálculos."""
+        if not valor_str:
+            return 0.0
+        limpo = valor_str.replace("R$", "").replace(".", "").replace(",", ".").strip()
+        try:
+            return float(limpo)
+        except ValueError:
+            return 0.0
 
-    if fipeP <= 0 or fipeA <= 0:
-      raise ValueError("Valor da fipe tem que ser maior que 0")
-    self.fipeP = fipeP
-    self.fipeA = fipeA
-
-    if quilometragem < 0:
-      raise ValueError("Quilometragem tem que ser maior/igual que 0")
-    self._quilometragem = quilometragem
-    self.km_rev = 0
-
-  @property
-  def quilometragem(self):
-    return self._quilometragem
-
-  def at_quilometragem(self, n_km):
-    if n_km < self.quilometragem:
-      raise ValueError("Quilometragem tem que ser maior que atual")
-    self._quilometragem = n_km
-
-  def abastecer(self, nivel):
-    if nivel < 0 or nivel > 1:
-      raise ValueError("Combustivel tem que ser entre 0 e 1")
-    self.combustivel_nivel = nivel
-
-  @property
-  def tipo(self):
-    ano_atual = datetime.datetime.now().year
-    if self.ano == ano_atual and self.quilometragem < 5000:
-      return TipoVeiculo.NOVO
-    else:
-      return TipoVeiculo.USADO
-
-  def deprec(self):
-    diff = self.fipeP - self.fipeA
-    return diff / self.fipeP
-
-  def fipeAlert(self):
-    return self.deprec() >= 0.15
-
-  def fazerRev(self):
-    self.km_rev = self._quilometragem
-
-  def rev(self):
-    return (self.quilometragem - self.km_rev) >= 10000
-
-  def emissao(self, km, est):
-    return est.calc(km)
+    def __str__(self):
+        return f"Veículo [{self.placa}] - {self.marca} {self.nome_modelo} ({self.ano_modelo}) | Valor: {self.valor_fipe_texto}"
