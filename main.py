@@ -1,33 +1,30 @@
-from modelos.enums import Combustivel
-from modelos.veiculo import Veiculo
+from database.repositorio_fotos import (
+    salvar_foto,
+)  # Ajusta o import se o ficheiro estiver numa pasta como 'database.repositorio_fotos'
 
-v = Veiculo("ABC1234", "VW", "Gol", 2014, 100000, Combustivel.FLEX, 35000, 30000)
 
-print(v.status)
-print(v.tipo)
-print(v.deprec())
-print(v.fipeAlert())
+def main():
+  print("--- A TESTAR APENAS O MONGODB ATLAS ---")
 
-v.at_quilometragem(105000)
-print(v.quilometragem)
+  try:
+    # Usamos IDs de exemplo para testar a gravação no MongoDB
+    cliente_id = 1
+    veiculo_id = 1
+    caminho_arquivo_foto = "fotos/veiculo_exemplo.jpg"
 
-v.abastecer(0.5)
-print(v.combustivel)
+    # Chama a função do repositório do MongoDB
+    id_foto_mongo = salvar_foto(
+        cliente_id=cliente_id,
+        veiculo_id=veiculo_id,
+        caminho_arquivo=caminho_arquivo_foto,
+    )
+    print(f"Foto salva com sucesso no MongoDB Atlas! ID: {id_foto_mongo}")
 
-from modelos.cliente import Cliente
+  except Exception as e:
+    print(f"Erro ao salvar a foto no MongoDB: {e}")
 
-print("\n--- TESTE CLIENTE ---")
-c = Cliente("Davi", "davi@email.com", "529.982.247-25", "12345678900")
-print("Cliente:", c.nome)
-print("CPF:", c.cpf.formatado())
-print("CNH:", c.cnh)
-print("Status:", c.status)
-print("Pode alugar?", c.pode_alugar())
+  print("\n--- TESTE CONCLUÍDO ---")
 
-c.bloquear("Documento pendente")
-print("Apos bloqueio:", c.status, "| Motivo:", c.motivo)
-print("Pode alugar?", c.pode_alugar())
 
-c.desbloquear()
-print("Apos desbloqueio:", c.status)
-print("Pode alugar?", c.pode_alugar())
+if __name__ == "__main__":
+  main()

@@ -1,72 +1,78 @@
 import datetime
+from database.conexao_postgres import Base
 from modelos.enums import Combustivel, Status, Veiculo as TipoVeiculo
+from sqlalchemy import Column, Float, Integer, String, Enum as SqlEnum
 
-class OdometroError(Exception):
-    pass
 
-class NivelCombustivelError(Exception):
-    pass
+class VeiculoModel(Base):
+  __tablename__ = "veiculos"
 
-class ValorFipeError(Exception):
-    pass
+  id = Column(Integer, primary_key=True, autoincrement=True)
+  placa = Column("placa", String, unique=True, nullable=False)
+  marca = Column(String, nullable=False)
+  modelo = Column(String, nullable=False)
+  ano = Column(Integer, nullable=False)
+  status = Column(SqlEnum(Status), default=Status.DISPONIVEL, nullable=False)
+  combustivel_nivel = Column(Float, default=1.0, nullable=False)
+  fipeP = Column(Float, nullable=False)
+  fipeA = Column(Float, nullable=False)
+  _quilometragem = Column("quilometragem", Integer, nullable=False)
+  km_rev = Column(Integer, default=0, nullable=False)
 
-class Veiculo:
-    def __init__(self, placa, marca, modelo, ano, quilometragem, combustivel, fipeP, fipeA):
-        self.placa = placa
-        self.marca = marca
-        self.modelo = modelo
-        self.ano = ano
-        self.status = Status.DISPONIVEL
-        self.combustivel = 1.0
+  def __init__(
+      self, placa, marca, modelo, ano, quilometragem, combustivel, fipeP, fipeA
+  ):
+    self.placa = placa
+    self.marca = marca
+    self.modelo = modelo
+    self.ano = ano
+    self.status = Status.DISPONIVEL
+    self.combustivel_nivel = 1.0
 
-        if fipeP <= 0 or fipeA <= 0:
-            raise ValorFipeError("Valor da fipe tem que ser maior que 0")
-        self.fipeP = fipeP
-        self.fipeA = fipeA
+    if fipeP <= 0 or fipeA <= 0:
+      raise ValueError("Valor da fipe tem que ser maior que 0")
+    self.fipeP = fipeP
+    self.fipeA = fipeA
 
-        self.combustivel = 1.0
+    if quilometragem < 0:
+      raise ValueError("Quilometragem tem que ser maior/igual que 0")
+    self._quilometragem = quilometragem
+    self.km_rev = 0
 
-        if quilometragem < 0:
-            raise OdometroError("Quilometragem tem que ser maior/igual que 0")
-        self._quilometragem = quilometragem
-        self.km_rev = 0
+  @property
+  def quilometragem(self):
+    return self._quilometragem
 
-    @property
-    def quilometragem(self):
-        return self._quilometragem
+  def at_quilometragem(self, n_km):
+    if n_km < self.quilometragem:
+      raise ValueError("Quilometragem tem que ser maior que atual")
+    self._quilometragem = n_km
 
-    def at_quilometragem(self, n_km):
-        if n_km < self.quilometragem:
-            raise OdometroError("Quilometragem tem que ser maior que atual")
-        self._quilometragem = n_km
+  def abastecer(self, nivel):
+    if nivel < 0 or nivel > 1:
+      raise ValueError("Combustivel tem que ser entre 0 e 1")
+    self.combustivel_nivel = nivel
 
-    def abastecer(self, nivel):
-        if nivel < 0 or nivel > 1:
-            raise NivelCombustivelError("Combustivel tem que ser entre 0 e 1")
-        self.combustivel = nivel
+  @property
+  def tipo(self):
+    ano_atual = datetime.datetime.now().year
+    if self.ano == ano_atual and self.quilometragem < 5000:
+      return TipoVeiculo.NOVO
+    else:
+      return TipoVeiculo.USADO
 
-    @property
-    def tipo(self):
-        ano = datetime.datetime.now().year
-        if self.ano == ano and self.quilometragem < 5000:
-            return TipoVeiculo.NOVO
-        else:
-            return TipoVeiculo.USADO
+  def deprec(self):
+    diff = self.fipeP - self.fipeA
+    return diff / self.fipeP
 
-    def deprec(self):
-        diff = self.fipeP - self.fipeA
-        return diff / self.fipeP
+  def fipeAlert(self):
+    return self.deprec() >= 0.15
 
-    def fipeAlert(self):
-        return self.deprec() >= 0.15
+  def fazerRev(self):
+    self.km_rev = self._quilometragem
 
-    def fazerRev(self):
-        self.km_rev = self._quilometragem
+  def rev(self):
+    return (self.quilometragem - self.km_rev) >= 10000
 
-    def rev(self):
-        return (self.quilometragem - self.km_rev) >= 10000
-
-    def emissao(self, km, est):
-        return est.calc(km)
-
-    
+  def emissao(self, km, est):
+    return est.calc(km)

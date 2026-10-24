@@ -345,7 +345,7 @@ responsável pelo processamento das requisições, autenticação dos usuários 
 das operações relacionadas aos veículos, reservas, pagamentos,
 manutenções e demais funcionalidades do sistema.
 
-A persistência dos dados será realizada utilizando MongoDB,
+A persistência dos dados será realizada utilizando PostgreSQLe MongoDB,
 armazenando informações relacionadas aos
 usuários, veículos, reservas, aluguéis, pagamentos, inspeções,
 manutenções e demais registros do sistema.
@@ -375,7 +375,7 @@ seguinte forma:
 
 \node (backend) [right=of frontend] {Back-end\\Python};
 
-\node (database) [right=of backend] {Banco de Dados\\MongoDB};
+\node (database) [right=of backend] {Banco de Dados\\PostgreSQL e MongoDB};
 
 \draw[<->, thick] (frontend) -- 
 node[above,draw=none] {API} (backend);
@@ -452,7 +452,7 @@ ocorrer da seguinte maneira:
 
 \node (c) [below=of b] {API\\Back-end Python};
 
-\node (d) [below=of c] {MongoDB\\verificação de disponibilidade};
+\node (d) [below=of c] {Banco de Dados\\verificação de disponibilidade};
 
 \node (e) [below=of d] {Back-end\\processamento da reserva};
 
