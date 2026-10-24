@@ -13,6 +13,7 @@
 *.nav
 *.snm
 *.vrb
+.venv
 
 # Temporários
 *.tmp
