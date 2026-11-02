@@ -1,6 +1,6 @@
 from datetime import date
-from modelos.enums import Status, StatusLocacao
-from modelos.cnh import CNH
+from backend.modelos.enums import Status, StatusLocacao
+from backend.modelos.cnh import CNH
 
 class ErroLocacao(Exception):
     pass

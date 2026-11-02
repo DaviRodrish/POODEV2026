@@ -1,5 +1,5 @@
 from datetime import datetime
-from modelos.enums import Status, StatusLocacao, TipoEmergencia, StatusEmergencia
+from backend.modelos.enums import Status, StatusLocacao, TipoEmergencia, StatusEmergencia
 
 class EmergenciaError(Exception):
     pass

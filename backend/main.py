@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
-from modelos.fipe import ServicoFipe
-from modelos.veiculo import VeiculoModel
+from backend.modelos.fipe import ServicoFipe
+from backend.modelos.veiculo import VeiculoModel
 
 load_dotenv()
 
