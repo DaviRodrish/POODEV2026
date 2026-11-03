@@ -16,9 +16,14 @@ export function Login() {
     const res = await login(cpfOuEmail, senha);
     
     if (res.success) {
-      navigate('/locacoes');
+      // Redireciona com base no tipo de perfil retornado pela API
+      if (res.tipoPerfil === 'agencia') {
+        navigate('/agencia/dashboard');
+      } else {
+        navigate('/cliente/dashboard');
+      }
     } else {
-      setErro(res.message);
+      setErro(res.message || "Erro ao efetuar login.");
     }
   };
 
@@ -38,12 +43,12 @@ export function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CPF ou E-mail</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">CPF, CNPJ ou E-mail</label>
             <input 
               type="text" 
               value={cpfOuEmail} 
               onChange={(e) => setCpfOuEmail(e.target.value)} 
-              placeholder="ex: 123.456.789-00 ou email@exemplo.com"
+              placeholder="ex: 12345678900 ou email@exemplo.com"
               required 
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
             />
@@ -69,7 +74,6 @@ export function Login() {
           </button>
         </form>
 
-        {/* Links de navegação */}
         <div className="mt-6 flex items-center justify-between text-sm">
           <Link to="/" className="text-blue-600 hover:underline font-medium">
             ← Voltar para a Home

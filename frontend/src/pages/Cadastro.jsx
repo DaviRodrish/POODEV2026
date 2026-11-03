@@ -7,8 +7,10 @@ export function Cadastro() {
     nome: '',
     email: '',
     cpf: '',
+    cnpj: '',
     tipoPerfil: 'cliente',
     cnh: '',
+    endereco: '',
     senha: ''
   });
   
@@ -25,7 +27,7 @@ export function Cadastro() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Função para processar a imagem da CNH com o Tesseract.js
+  // Função para processar a imagem da CNH com o Tesseract.js (apenas para motorista)
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -85,13 +87,43 @@ export function Cadastro() {
     e.preventDefault();
     setErro('');
 
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const dataToSend = new FormData();
+
+    // Lógica específica para Agência
+    if (formData.tipoPerfil === 'agencia') {
+      dataToSend.append('nome', formData.nome);
+      dataToSend.append('email', formData.email);
+      dataToSend.append('cnpj', formData.cnpj);
+      dataToSend.append('senha', formData.senha);
+      dataToSend.append('endereco', formData.endereco);
+
+      try {
+        const response = await fetch(`${apiUrl}/api/cadastro-agencia`, {
+          method: 'POST',
+          body: dataToSend 
+        });
+
+        const resJson = await response.json();
+        if (response.ok) {
+          alert("Agência cadastrada com sucesso!");
+          navigate('/login');
+        } else {
+          setErro(resJson.detail || "Erro ao realizar o cadastro da agência.");
+        }
+      } catch (err) {
+        console.error(err);
+        setErro("Falha na conexão com o servidor.");
+      }
+      return;
+    }
+
+    // Lógica para Cliente / Motorista
     if (formData.tipoPerfil === 'motorista' && !cnhValidadaPorOCR) {
       const confirmar = window.confirm("O OCR não pôde confirmar 100% dos dados. Deseja enviar para validação manual?");
       if (!confirmar) return;
     }
 
-    // Usando FormData para enviar dados textuais + arquivo de imagem para o backend
-    const dataToSend = new FormData();
     dataToSend.append('nome', formData.nome);
     dataToSend.append('email', formData.email);
     dataToSend.append('cpf', formData.cpf);
@@ -106,18 +138,16 @@ export function Cadastro() {
     }
 
     try {
-      // Utiliza a variável de ambiente configurada no .env do front-end
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiUrl}/api/cadastro`, {
         method: 'POST',
         body: dataToSend 
       });
 
+      const resJson = await response.json();
       if (response.ok) {
         alert("Cadastro realizado com sucesso!");
         navigate('/login');
       } else {
-        const resJson = await response.json();
         setErro(resJson.detail || resJson.message || "Erro ao realizar o cadastro.");
       }
     } catch (err) {
@@ -142,13 +172,15 @@ export function Cadastro() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {formData.tipoPerfil === 'agencia' ? 'Nome da Agência' : 'Nome Completo'}
+            </label>
             <input 
               type="text" 
               name="nome"
               value={formData.nome} 
               onChange={handleChange} 
-              placeholder="Digite seu nome completo"
+              placeholder={formData.tipoPerfil === 'agencia' ? 'Nome da empresa' : 'Digite seu nome completo'}
               required 
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
             />
@@ -167,22 +199,42 @@ export function Cadastro() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
-            <input 
-              type="text" 
-              name="cpf"
-              value={formData.cpf} 
-              onChange={handleChange} 
-              maxLength="11"
-              placeholder="Apenas números"
-              required 
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-            />
-          </div>
+          {/* Campo CPF (apenas para cliente/motorista) */}
+          {formData.tipoPerfil !== 'agencia' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+              <input 
+                type="text" 
+                name="cpf"
+                value={formData.cpf} 
+                onChange={handleChange} 
+                maxLength="11"
+                placeholder="Apenas números"
+                required 
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+              />
+            </div>
+          )}
+
+          {/* Campo CNPJ (apenas para agência) */}
+          {formData.tipoPerfil === 'agencia' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CNPJ</label>
+              <input 
+                type="text" 
+                name="cnpj"
+                value={formData.cnpj} 
+                onChange={handleChange} 
+                maxLength="14"
+                placeholder="Apenas números"
+                required 
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+              />
+            </div>
+          )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Usuário</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Perfil</label>
             <select 
               name="tipoPerfil"
               value={formData.tipoPerfil} 
@@ -191,6 +243,7 @@ export function Cadastro() {
             >
               <option value="cliente">Cliente / Usuário Padrão</option>
               <option value="motorista">Motorista</option>
+              <option value="agencia">Agência de Aluguel</option>
             </select>
           </div>
 
@@ -205,6 +258,7 @@ export function Cadastro() {
                   value={formData.cnh} 
                   onChange={handleChange} 
                   placeholder="Número do documento CNH"
+                  required 
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-white"
                 />
               </div>
@@ -213,10 +267,10 @@ export function Cadastro() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Upload da Imagem da CNH</label>
                 <input 
                   type="file" 
-                  accept="image/png, image/jpeg, application/pdf"
+                  accept="image/png, image/jpeg"
                   onChange={handleFileChange}
                   className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />        
+                />
               </div>
 
               {statusOcr.texto && (
@@ -227,6 +281,24 @@ export function Cadastro() {
                   {statusOcr.texto}
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Seção Dinâmica para Agência */}
+          {formData.tipoPerfil === 'agencia' && (
+            <div className="p-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Endereço da Agência</label>
+                <input 
+                  type="text" 
+                  name="endereco"
+                  value={formData.endereco} 
+                  onChange={handleChange} 
+                  placeholder="Rua, Número, Bairro, Cidade"
+                  required 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition bg-white"
+                />
+              </div>
             </div>
           )}
 

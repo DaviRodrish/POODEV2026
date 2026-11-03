@@ -19,19 +19,31 @@ export function AuthProvider({ children }) {
 
   const login = async (cpfOuEmail, senha) => {
     try {
-      // Endpoint correspondente no teu backend Python (ex: /login ou /api/login)
-      const response = await api.post('/login', {
-        cpf_ou_email: cpfOuEmail,
-        senha: senha,
+      // Como o FastAPI espera dados de formulário (Form), usamos FormData
+      const formData = new FormData();
+      formData.append('identificador', cpfOuEmail);
+      formData.append('senha', senha);
+
+      // Alterado para '/api/login' para bater certinho com a rota do FastAPI
+      const response = await api.post('/api/login', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      const { token, usuario } = response.data;
+      const data = response.data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(usuario));
-      setUser(usuario);
+      // Salvamos o utilizador e o tipo de perfil retornado pelo backend
+      const usuarioLogado = { ...data.usuario, tipoPerfil: data.tipoPerfil };
 
-      return { success: true };
+      localStorage.setItem('token', 'fake-token-jwt'); // ou data.token se o backend retornar
+      localStorage.setItem('user', JSON.stringify(usuarioLogado));
+      setUser(usuarioLogado);
+
+      return { 
+        success: true, 
+        tipoPerfil: data.tipoPerfil // Retornamos para redirecionar na página de Login
+      };
     } catch (error) {
       return { 
         success: false, 
