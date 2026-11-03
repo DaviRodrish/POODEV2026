@@ -69,9 +69,13 @@ export function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-sm text-blue-600 hover:underline font-medium">
+        {/* Links de navegação */}
+        <div className="mt-6 flex items-center justify-between text-sm">
+          <Link to="/" className="text-blue-600 hover:underline font-medium">
             ← Voltar para a Home
+          </Link>
+          <Link to="/cadastro" className="text-blue-600 hover:underline font-medium">
+            Criar conta →
           </Link>
         </div>
       </div>

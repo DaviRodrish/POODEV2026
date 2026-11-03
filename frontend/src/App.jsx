@@ -4,6 +4,7 @@ import { useContext } from 'react';
 
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
+import { Cadastro } from './pages/Cadastro'; // <-- 1. Importe a página de cadastro
 import { CatalogoVeiculos } from './pages/CatalogoVeiculos';
 import { MinhasLocacoes } from './pages/MinhasLocacoes';
 
@@ -22,6 +23,7 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/veiculos" element={<CatalogoVeiculos />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<Cadastro />} /> {/* <-- 2. Adicione a rota aqui */}
           <Route 
             path="/locacoes" 
             element={

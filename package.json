@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  },
+  "scripts": {
+    "dev:backend": "venv\\Scripts\\python -m uvicorn backend.main:app --reload",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+  }
+}

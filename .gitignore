@@ -16,6 +16,15 @@
 .venv
 .env
 
+# Node / Frontend
+node_modules/
+dist/
+
+# Uploads de documentos e CNH
+uploads/
+backend/uploads/
+
 # Temporários
 *.tmp
 *.bak
+.vscode
