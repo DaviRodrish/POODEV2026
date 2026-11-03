@@ -5,19 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 
-# Importações dos modelos de Agência, Veículos da Agência e Validador de CNPJ
+# Importações dos modelos e validadores
 from backend.modelos.agencia import AgenciaModel
 from backend.modelos.cnpj import CNPJ, CNPJError
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
-
-# Importações dos serviços e modelos da FIPE
 from backend.modelos.fipe import ServicoFipe
 from backend.modelos.veiculo import VeiculoModel
-
-# Importação da classe de validação de CPF
 from backend.modelos.cpf import CPF, CPFError
-
-# Importação do modelo do Cliente/Usuário do PostgreSQL
 from backend.modelos.cliente import ClienteModel
 
 # Importações dos bancos de dados
@@ -31,13 +25,13 @@ app = FastAPI(title="API Sistema de Aluguel de Carros")
 # Configuração do CORS para permitir a comunicação com o React (Vite)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, restrinja para o domínio exato do front-end
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Garantir que a pasta de uploads existe dentro do backend e torná-la acessível publicamente via URL
+# Garantir que a pasta de uploads existe e torná-la acessível publicamente via URL
 os.makedirs("backend/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="backend/uploads"), name="uploads")
 
@@ -45,7 +39,7 @@ app.mount("/uploads", StaticFiles(directory="backend/uploads"), name="uploads")
 def raiz():
     return {"mensagem": "API do Sistema de Aluguel de Carros a rodar com sucesso!"}
 
-# Rota de autenticação unificada para Clientes e Agências
+# Rota de autenticação unificada para Clientes, Motoristas e Agências
 @app.post("/api/login")
 async def login_usuario(
     identificador: str = Form(...), # Pode ser email, CPF ou CNPJ
@@ -53,7 +47,7 @@ async def login_usuario(
     db: Session = Depends(obter_conexao)
 ):
     try:
-        # 1. Tenta procurar o cliente por e-mail ou CPF
+        # 1. Tenta procurar o cliente/motorista por e-mail ou CPF
         cliente = db.query(ClienteModel).filter(
             (ClienteModel.email == identificador) | (ClienteModel._cpf == identificador)
         ).first()
@@ -62,7 +56,7 @@ async def login_usuario(
             return {
                 "success": True,
                 "message": "Login efetuado com sucesso!",
-                "tipoPerfil": "cliente",
+                "tipoPerfil": cliente.tipo_perfil if hasattr(cliente, 'tipo_perfil') and cliente.tipo_perfil else "cliente",
                 "usuario": {
                     "id": cliente.id,
                     "nome": cliente.nome,
@@ -98,14 +92,13 @@ async def login_usuario(
         print(f"Erro no login: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# Rota de cadastro integrada com PostgreSQL (com senha) e MongoDB (com foto da CNH)
+# Rota de cadastro integrada com PostgreSQL (com suporte a tipo_perfil) e MongoDB (foto da CNH)
 @app.post("/api/cadastro")
 async def cadastrar_usuario(
     nome: str = Form(...),
     email: str = Form(...),
     cpf: str = Form(...),
-    tipoPerfil: str = Form(...),
+    tipoPerfil: str = Form(...), # 'cliente' ou 'motorista'
     senha: str = Form(...),
     cnh: str = Form(None),
     fotoCnh: UploadFile = File(None),
@@ -135,7 +128,7 @@ async def cadastrar_usuario(
                 detail="E-mail ou CPF já registados no sistema."
             )
 
-        # 3. Instanciar o ClienteModel passando a senha e os dados do formulário
+        # 3. Instanciar o ClienteModel guardando o tipo de perfil escolhido
         cnh_valor = cnh if cnh else "Não informada"
 
         novo_cliente = ClienteModel(
@@ -143,27 +136,24 @@ async def cadastrar_usuario(
             email=email,
             cpf=cpf,
             cnh=cnh_valor,
-            senha=senha
+            senha=senha,
+            tipo_perfil=tipoPerfil
         )
 
-        # Adiciona e persiste no PostgreSQL
         db.add(novo_cliente)
         db.commit()
         db.refresh(novo_cliente)
         
-        # Recupera o ID gerado pelo PostgreSQL
         cliente_id = novo_cliente.id
-        print(f"Cliente gravado no PostgreSQL com ID: {cliente_id}")
+        print(f"Cliente gravado no PostgreSQL com ID: {cliente_id} (Perfil: {tipoPerfil})")
 
-        # 4. Se for motorista e enviou a foto/documento da CNH, salvar no MongoDB Atlas
+        # 4. Se for motorista e enviou a foto da CNH, salvar no MongoDB Atlas
         if tipoPerfil == "motorista" and fotoCnh:
             caminho_relativo = f"backend/uploads/{fotoCnh.filename}"
             
-            # Salva o ficheiro no disco dentro da pasta do backend
             with open(caminho_relativo, "wb") as buffer:
                 buffer.write(await fotoCnh.read())
             
-            # Guarda no MongoDB o caminho amigável para acesso
             caminho_para_mongo = f"uploads/{fotoCnh.filename}"
             id_mongo = salvar_cnh_motorista(cliente_id=cliente_id, caminho_arquivo=caminho_para_mongo)
             print(f"Documento da CNH salvo no MongoDB com ID: {id_mongo}")
@@ -178,8 +168,7 @@ async def cadastrar_usuario(
         print(f"Erro no cadastro: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
-# Rota orientada a objetos para o cadastro de Agências
+# Rota para o cadastro de Agências
 @app.post("/api/cadastro-agencia")
 async def cadastrar_agencia(
     nome: str = Form(...),
@@ -201,7 +190,7 @@ async def cadastrar_agencia(
 
         print(f"CNPJ Validado com sucesso: {cnpj_obj.formatado()}")
 
-        # 2. Verificar se o e-mail ou CNPJ já estão registados no sistema
+        # 2. Verificar se o e-mail ou CNPJ já estão registados
         agencia_existente = db.query(AgenciaModel).filter(
             (AgenciaModel.email == email) | (AgenciaModel._cnpj == cnpj_obj.numero)
         ).first()
@@ -212,7 +201,7 @@ async def cadastrar_agencia(
                 detail="E-mail ou CNPJ já registados no sistema."
             )
 
-        # 3. Instanciar o modelo da Agência
+        # 3. Instanciar e persistir no PostgreSQL
         nova_agencia = AgenciaModel(
             nome=nome,
             email=email,
@@ -221,7 +210,6 @@ async def cadastrar_agencia(
             endereco=endereco
         )
 
-        # Persistir na base de dados PostgreSQL
         db.add(nova_agencia)
         db.commit()
         db.refresh(nova_agencia)
@@ -236,7 +224,6 @@ async def cadastrar_agencia(
         db.rollback()
         print(f"Erro no cadastro de agência: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # Rota para cadastrar veículos associados a uma agência (utilizando os dados da FIPE)
 @app.post("/api/agencias/{agencia_id}/veiculos")
@@ -263,7 +250,7 @@ async def cadastrar_veiculo_agencia(
             ano_id=ano_codigo
         )
 
-        # 3. Criar o registo do veículo para a frota da agência
+        # 3. Criar o registo do veículo ligado à agência
         nova_frota = VeiculoAgenciaModel(
             agencia_id=agencia_id,
             placa=placa.upper(),
@@ -293,15 +280,12 @@ async def cadastrar_veiculo_agencia(
         print(f"Erro ao cadastrar veículo na agência: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # Rota pública para listar o catálogo de veículos disponíveis de todas as agências
 @app.get("/api/catalogo/veiculos")
 async def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
     veiculos = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.status == "disponível").all()
     return veiculos
 
-
-# Função de teste da FIPE (opcional para testes diretos via terminal)
-def executar_teste_fipe():
-    print("--- A consultar Marcas na FIPE ---")
-    marcas = ServicoFipe.listar_marcas()
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

@@ -1,44 +1,40 @@
+from sqlalchemy import Column, Integer, String
 from backend.database.conexao_postgres import Base
-from backend.modelos.cpf import CPF
-from backend.modelos.enums import StatusCliente
-from sqlalchemy import Column, Enum as SqlEnum, Integer, String
-
 
 class ClienteModel(Base):
+    """
+    Classe que representa o Utilizador / Cliente / Motorista no sistema,
+    mapeando a tabela 'clientes' do PostgreSQL com suporte a perfis diferenciados.
+    """
     __tablename__ = "clientes"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     nome = Column(String, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    _cpf = Column("cpf", String, unique=True, nullable=False)
-    cnh = Column(String, nullable=False)
-    senha = Column(String, nullable=False)  # <-- Adicionado aqui
-    status = Column(
-        SqlEnum(StatusCliente), default=StatusCliente.ATIVO, nullable=False
-    )
-    motivo = Column(String, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    _cpf = Column("cpf", String, unique=True, index=True, nullable=False)
+    cnh = Column(String, nullable=True)
+    senha = Column(String, nullable=False)
+    tipo_perfil = Column(String, default="cliente")  # Pode ser 'cliente' (usuário comum) ou 'motorista'
 
-    def __init__(self, nome, email, cpf, cnh, senha):
+    def __init__(self, nome: str, email: str, cpf: str, cnh: str, senha: str, tipo_perfil: str = "cliente"):
         self.nome = nome
         self.email = email
-        objeto_cpf = CPF(cpf)
-        self._cpf = objeto_cpf.numero
+        self.cpf = cpf  # Utiliza a property para validação e armazenamento limpo
         self.cnh = cnh
-        self.senha = senha  # <-- Atribuído aqui
-        self.status = StatusCliente.ATIVO
-        self.motivo = None
+        self.senha = senha
+        self.tipo_perfil = tipo_perfil
 
     @property
     def cpf(self):
-        return CPF(self._cpf)
+        """Retorna o CPF armazenado na base de dados."""
+        return self._cpf
 
-    def bloquear(self, motivo=None):
-        self.status = StatusCliente.BLOQUEADO
-        self.motivo = motivo if motivo else "Nenhum"
+    @cpf.setter
+    def cpf(self, valor: str):
+        """Atribui o CPF removendo caracteres não numéricos se necessário."""
+        # Remove pontos e traços para guardar apenas os números
+        limpo = "".join(filter(str.isdigit, str(valor)))
+        self._cpf = limpo
 
-    def desbloquear(self):
-        self.status = StatusCliente.ATIVO
-        self.motivo = None
-
-    def pode_alugar(self):
-        return self.status == StatusCliente.ATIVO
+    def __repr__(self):
+        return f"<ClienteModel(id={self.id}, nome='{self.nome}', email='{self.email}', perfil='{self.tipo_perfil}')>"
