@@ -286,6 +286,23 @@ async def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
     veiculos = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.status == "disponível").all()
     return veiculos
 
+# --- ROTAS DE CONSULTA DINÂMICA DA FIPE ---
+
+@app.get("/api/fipe/marcas")
+def listar_marcas_fipe():
+    """Retorna todas as marcas de carros da FIPE."""
+    return ServicoFipe.listar_marcas()
+
+@app.get("/api/fipe/marcas/{marca_id}/modelos")
+def listar_modelos_fipe(marca_id: str):
+    """Retorna os modelos de uma determinada marca."""
+    return ServicoFipe.listar_modelos(marca_id)
+
+@app.get("/api/fipe/marcas/{marca_id}/modelos/{modelo_id}/anos")
+def listar_anos_fipe(marca_id: str, modelo_id: str):
+    """Retorna os anos/versões de um determinado modelo."""
+    return ServicoFipe.listar_anos(marca_id, modelo_id)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
