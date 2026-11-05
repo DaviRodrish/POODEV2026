@@ -1,21 +1,17 @@
-from sqlalchemy import Column, Integer, String
-from backend.database.conexao_postgres import Base
+from sqlalchemy import Column, String
+from backend.modelos.cnpj import CNPJ
+from backend.modelos.usuario import Usuario, UsuarioModel
 
-class AgenciaModel(Base):
+class AgenciaModel(UsuarioModel):
     __tablename__ = "agencias"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nome = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
     _cnpj = Column("cnpj", String, unique=True, index=True, nullable=False)
-    senha = Column(String, nullable=False)
     endereco = Column(String, nullable=False)
+    tipo_perfil = "agencia"
 
-    def __init__(self, nome: str, email: str, cnpj: str, senha: str, endereco: str):
-        self.nome = nome
-        self.email = email
-        self.cnpj = cnpj  # Usa o property abaixo para validar
-        self.senha = senha
+    def __init__(self, nome: str, email: str, cnpj: str, senha: str = "123", endereco: str = ""):
+        super().__init__(nome=nome, email=email, senha=senha)
+        self.cnpj = cnpj
         self.endereco = endereco
 
     @property
@@ -24,6 +20,49 @@ class AgenciaModel(Base):
 
     @cnpj.setter
     def cnpj(self, valor: str):
-        from backend.modelos.cnpj import CNPJ
-        cnpj_obj = CNPJ(valor)
+        cnpj_obj = CNPJ(valor) if isinstance(valor, str) else valor
         self._cnpj = cnpj_obj.numero
+
+    def get_documento(self):
+        return self._cnpj
+
+    def pode_operar(self):
+        return bool(self._cnpj) and bool(self.endereco)
+
+
+class Agencia(Usuario):
+    def __init__(self, nome, email, cnpj, endereco, senha="123", status="ATIVO"):
+        super().__init__(nome=nome, email=email, senha=senha, status=status, tipo_perfil="agencia")
+        self.cnpj = cnpj
+        self.endereco = str(endereco).strip()
+        self.frota = []
+
+    @property
+    def cnpj(self):
+        return self._cnpj
+
+    @cnpj.setter
+    def cnpj(self, valor):
+        self._cnpj = CNPJ(valor) if isinstance(valor, str) else valor
+
+    def get_documento(self):
+        return self.cnpj.formatado() if hasattr(self.cnpj, "formatado") else str(self.cnpj)
+
+    def pode_operar(self):
+        st = getattr(self.status, "value", self.status)
+        return st == "ATIVO" and bool(self.endereco)
+
+    def cadastrar_veiculo(self, veiculo):
+        self.frota.append(veiculo)
+
+    def exibir_dados(self):
+        st = getattr(self.status, "value", self.status)
+        return {
+            "tipo": self.tipo_perfil(),
+            "nome": self.nome,
+            "email": self.email,
+            "documento": self.get_documento(),
+            "endereco": self.endereco,
+            "status": st,
+            "total_frota": len(self.frota)
+        }

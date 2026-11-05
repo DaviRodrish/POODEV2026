@@ -13,7 +13,9 @@ class Locacao:
             raise ErroLocacao("Diaria negativa.")
         if taxa < 0:
             raise ErroLocacao("Taxa negativa.")
-        if hasattr(cli, "pode_alugar") and not cli.pode_alugar():
+        if hasattr(cli, "pode_operar") and not cli.pode_operar():
+            raise ErroLocacao("Cliente bloqueado.")
+        elif hasattr(cli, "pode_alugar") and not cli.pode_alugar():
             raise ErroLocacao("Cliente bloqueado.")
         if hasattr(veic, "status") and veic.status != Status.DISPONIVEL:
             raise ErroLocacao("Veiculo indisponivel.")
@@ -90,7 +92,9 @@ class Locacao:
     def adicionar_motorista_secundario(self, motorista, categoria="B"):
         if self.status != StatusLocacao.RESERVADA:
             raise ErroLocacao("Locacao nao reservada.")
-        if hasattr(motorista, "pode_alugar") and not motorista.pode_alugar():
+        if hasattr(motorista, "pode_operar") and not motorista.pode_operar():
+            raise ErroLocacao("Motorista bloqueado.")
+        elif hasattr(motorista, "pode_alugar") and not motorista.pode_alugar():
             raise ErroLocacao("Motorista bloqueado.")
         if motorista == self.cli or getattr(motorista, "cpf", 1) == getattr(self.cli, "cpf", 2):
             raise ErroLocacao("Motorista e o titular.")
