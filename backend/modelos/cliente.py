@@ -1,40 +1,93 @@
-from sqlalchemy import Column, Integer, String
-from backend.database.conexao_postgres import Base
+from sqlalchemy import Column, String
+from backend.modelos.cpf import CPF
+from backend.modelos.cnh import CNH
+from backend.modelos.usuario import Usuario, UsuarioModel
 
-class ClienteModel(Base):
-    """
-    Classe que representa o Utilizador / Cliente / Motorista no sistema,
-    mapeando a tabela 'clientes' do PostgreSQL com suporte a perfis diferenciados.
-    """
+class ClienteModel(UsuarioModel):
     __tablename__ = "clientes"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nome = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
     _cpf = Column("cpf", String, unique=True, index=True, nullable=False)
     cnh = Column(String, nullable=True)
-    senha = Column(String, nullable=False)
-    tipo_perfil = Column(String, default="cliente")  # Pode ser 'cliente' (usuário comum) ou 'motorista'
+    tipo_perfil = Column(String, default="cliente")
+    status = Column(String, default="ATIVO")
+    motivo = Column(String, nullable=True)
 
-    def __init__(self, nome: str, email: str, cpf: str, cnh: str, senha: str, tipo_perfil: str = "cliente"):
-        self.nome = nome
-        self.email = email
-        self.cpf = cpf  # Utiliza a property para validação e armazenamento limpo
+    def __init__(self, nome, email, cpf, cnh=None, senha="123", tipo_perfil="cliente", status="ATIVO", motivo=None):
+        super().__init__(nome=nome, email=email, senha=senha)
+        self.cpf = cpf
         self.cnh = cnh
-        self.senha = senha
         self.tipo_perfil = tipo_perfil
+        self.status = status
+        self.motivo = motivo
 
     @property
     def cpf(self):
-        """Retorna o CPF armazenado na base de dados."""
         return self._cpf
 
     @cpf.setter
-    def cpf(self, valor: str):
-        """Atribui o CPF removendo caracteres não numéricos se necessário."""
-        # Remove pontos e traços para guardar apenas os números
-        limpo = "".join(filter(str.isdigit, str(valor)))
-        self._cpf = limpo
+    def cpf(self, valor):
+        self._cpf = "".join(filter(str.isdigit, str(valor)))
+
+    def get_documento(self):
+        return self._cpf
+
+    def pode_operar(self):
+        return self.status == "ATIVO"
+
+    def pode_alugar(self):
+        return self.pode_operar()
+
+    def bloquear(self, motivo):
+        self.status = "BLOQUEADO"
+        self.motivo = motivo
+
+    def desbloquear(self):
+        self.status = "ATIVO"
+        self.motivo = None
 
     def __repr__(self):
-        return f"<ClienteModel(id={self.id}, nome='{self.nome}', email='{self.email}', perfil='{self.tipo_perfil}')>"
+        return f"<ClienteModel(id={self.id}, nome='{self.nome}', status='{self.status}')>"
+
+
+class Cliente(Usuario):
+    def __init__(self, nome, email, cpf_str, cnh_num=None, senha="123", status="ATIVO"):
+        super().__init__(nome=nome, email=email, senha=senha, status=status, tipo_perfil="cliente")
+        self.cpf = cpf_str
+        self.cnh = cnh_num
+
+    @property
+    def cpf(self):
+        return self._cpf
+
+    @cpf.setter
+    def cpf(self, valor):
+        self._cpf = CPF(valor) if isinstance(valor, str) else valor
+
+    @property
+    def cnh(self):
+        return self._cnh
+
+    @cnh.setter
+    def cnh(self, valor):
+        if valor is None:
+            self._cnh = None
+        else:
+            self._cnh = CNH(valor) if isinstance(valor, str) else valor
+
+    def get_documento(self):
+        return self.cpf.formatado() if hasattr(self.cpf, "formatado") else str(self.cpf)
+
+    def pode_alugar(self):
+        return self.pode_operar()
+
+    def exibir_dados(self):
+        st = getattr(self.status, "value", self.status)
+        return {
+            "tipo": self.tipo_perfil(),
+            "nome": self.nome,
+            "email": self.email,
+            "documento": self.get_documento(),
+            "cnh": str(self.cnh.numero) if hasattr(self.cnh, "numero") else (str(self.cnh) if self.cnh else None),
+            "status": st,
+            "pode_alugar": self.pode_alugar()
+        }

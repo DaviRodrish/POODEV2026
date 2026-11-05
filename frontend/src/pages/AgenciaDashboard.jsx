@@ -5,7 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 export function AgenciaDashboard() {
   const [frota, setFrota] = useState([]);
   
-  // Estados para os seletores do formulário de cadastro
+  // Estados para os seletores do formulário de cadastro FIPE
   const [marcas, setMarcas] = useState([]);
   const [modelos, setModelos] = useState([]);
   const [anos, setAnos] = useState([]);
@@ -16,7 +16,7 @@ export function AgenciaDashboard() {
   const [placa, setPlaca] = useState('');
   const [valorDiaria, setValorDiaria] = useState(150.0);
 
-  // Estado para filtrar a tabela de veículos
+  // Estado para filtrar a tabela de veículos por marca
   const [marcaFiltroTabela, setMarcaFiltroTabela] = useState('');
 
   const { user, logout } = useContext(AuthContext);
@@ -111,6 +111,56 @@ export function AgenciaDashboard() {
     }
   };
 
+  const handleAtualizarCombustivel = async (veiculoId) => {
+    const input = prompt("Informe o novo nível de combustível (0.0 a 1.0, ex: 1.0 para Cheio, 0.5 para Meio):", "1.0");
+    if (input === null) return;
+    const nivel = parseFloat(input);
+    if (isNaN(nivel) || nivel < 0 || nivel > 1) {
+      alert("Valor inválido! Digite um número entre 0.0 e 1.0.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('nivel', nivel);
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/veiculos/${veiculoId}/combustivel`, {
+        method: 'PUT',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || "Combustível atualizado!");
+        carregarFrota();
+      } else {
+        alert(data.detail || "Erro ao atualizar combustível.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao conectar com o servidor.");
+    }
+  };
+
+  const handleRegistrarRevisao = async (veiculoId) => {
+    if (!confirm("Confirmar que a revisão preventiva deste veículo foi realizada?")) return;
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/veiculos/${veiculoId}/revisao`, {
+        method: 'PUT'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || "Revisão registrada com sucesso!");
+        carregarFrota();
+      } else {
+        alert(data.detail || "Erro ao registrar revisão.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao conectar com o servidor.");
+    }
+  };
+
   const handleSair = () => {
     logout();
     navigate('/login');
@@ -118,7 +168,7 @@ export function AgenciaDashboard() {
 
   // Filtra a frota com base na marca selecionada no filtro da tabela
   const frotaFiltrada = marcaFiltroTabela 
-    ? frota.filter(v => v.marca.toLowerCase() === marcaFiltroTabela.toLowerCase())
+    ? frota.filter(v => v.marca && v.marca.toLowerCase() === marcaFiltroTabela.toLowerCase())
     : frota;
 
   return (
@@ -268,31 +318,72 @@ export function AgenciaDashboard() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Placa</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marca / Modelo</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ano</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Valor Diária</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Diária</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Combustível</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status / Revisão</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {frotaFiltrada.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
                       Nenhum veículo encontrado para a marca selecionada.
                     </td>
                   </tr>
                 ) : (
-                  frotaFiltrada.map(v => (
-                    <tr key={v.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 font-mono">{v.placa}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{v.marca} {v.modelo}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{v.ano}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">R$ {v.valor_diaria}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
-                          {v.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
+                  frotaFiltrada.map(v => {
+                    const combustivelPct = Math.round((v.combustivel_nivel ?? 1.0) * 100);
+                    const kmAtual = v.quilometragem || 0;
+                    const kmLimite = v.km_rev || 10000;
+                    const precisaRevisao = v.precisa_revisao || (kmAtual >= kmLimite);
+
+                    return (
+                      <tr key={v.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 font-mono">{v.placa}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{v.marca} {v.modelo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{v.ano}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">R$ {v.valor_diaria}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full ${
+                            combustivelPct <= 25 ? 'bg-red-100 text-red-800' :
+                            combustivelPct <= 50 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            ⛽ {combustivelPct}%
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {precisaRevisao ? (
+                            <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 animate-pulse">
+                              🔴 Revisão Obrigatória ({kmAtual}/{kmLimite} km)
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                              🟢 Em dia ({kmAtual}/{kmLimite} km)
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                          <button
+                            onClick={() => handleAtualizarCombustivel(v.id)}
+                            className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-1 px-2.5 rounded border border-blue-200 transition"
+                            title="Atualizar nível de combustível na vistoria"
+                          >
+                            Vistoria Tanque
+                          </button>
+                          {precisaRevisao && (
+                            <button
+                              onClick={() => handleRegistrarRevisao(v.id)}
+                              className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-2.5 rounded shadow-sm transition"
+                              title="Registrar revisão realizada"
+                            >
+                              Fazer Revisão
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
