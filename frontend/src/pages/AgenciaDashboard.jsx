@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
-export function AgenciaDashboard({ agenciaLogada, onLogout }) {
+export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLogout }) {
+  const { user, logout } = useContext(AuthContext);
+  const agenciaLogada = propAgencia || user;
+  const onLogout = propLogout || logout;
   const [abaAtiva, setAbaAtiva] = useState('emergencias');
 
   const [frota, setFrota] = useState([]);
