@@ -102,6 +102,25 @@ export function ClienteDashboard() {
     }
   };
 
+  const handleDevolver = async (reservaId) => {
+    setMensagemFeedback('');
+    try {
+      const res = await fetch(`http://localhost:8000/api/reservas/${reservaId}/devolver`, {
+        method: 'PUT'
+      });
+      if (res.ok) {
+        setMensagemFeedback({ tipo: 'sucesso', texto: 'Veículo devolvido com sucesso à agência!' });
+        carregarMinhasReservas();
+        carregarCatalogo();
+      } else {
+        const erroJson = await res.json();
+        setMensagemFeedback({ tipo: 'erro', texto: erroJson.detail || 'Erro ao devolver veículo.' });
+      }
+    } catch (err) {
+      setMensagemFeedback({ tipo: 'erro', texto: 'Erro de conexão com o servidor ao devolver veículo.' });
+    }
+  };
+
   const enviarSos = async (e) => {
     e.preventDefault();
     setMensagemFeedback('');
@@ -374,7 +393,7 @@ export function ClienteDashboard() {
                         <div className="flex justify-between items-center">
                           <span className="text-xs font-bold text-slate-900">Reserva #{reserva.id}</span>
                           <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase ${
-                            reserva.status === 'APROVADA' ? 'bg-emerald-100 text-emerald-800' :
+                            reserva.status === 'APROVADA' || reserva.status === 'ATIVA' ? 'bg-emerald-100 text-emerald-800' :
                             reserva.status === 'RECUSADA' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
                           }`}>
                             {reserva.status}
@@ -387,6 +406,15 @@ export function ClienteDashboard() {
                           <p className="text-slate-800 font-semibold">Valor Total: R$ {reserva.valor_total}</p>
                         </div>
                       </div>
+
+                      {(reserva.status === 'APROVADA' || reserva.status === 'ATIVA') && (
+                        <button 
+                          onClick={() => handleDevolver(reserva.id)}
+                          className="w-full mt-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                          <span>🏁</span> Devolver Veículo à Agência
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
