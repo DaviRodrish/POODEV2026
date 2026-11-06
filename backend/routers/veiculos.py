@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from datetime import date, timedelta
 
 from backend.database.conexao_postgres import obter_conexao
-from backend.modelos.locacao import Locacao, ErroLocacao
+from backend.modelos.locacao import Locacao, LocacaoModel, ErroLocacao
 from backend.modelos.veiculo import VeiculoModel
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
 from backend.modelos.cliente import ClienteModel
@@ -45,8 +45,17 @@ async def solicitar_reserva(
             dest=dest
         )
 
-        # Opcional: Se quiser persistir o estado inicial no banco de dados, 
-        # pode guardar numa tabela de LocacaoModel correspondente.
+        registro_db = LocacaoModel(
+            cliente_id=cliente_db.id,
+            veiculo_id=veiculo_db.id,
+            agencia_id=veiculo_db.agencia_id,
+            dias_contratados=nova_locacao.qtd_dias,
+            valor_estimado=nova_locacao.total(),
+            status="PENDENTE",
+            ativa=True
+        )
+        db.add(registro_db)
+        db.commit()
         
         return {
             "success": True,
@@ -70,8 +79,28 @@ def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
 
 
 @router.get("/agencias/{agencia_id}/reservas-pendentes")
-def listar_reservas_pendentes(agencia_id: int):
-    return []
+def listar_reservas_pendentes(agencia_id: int, db: Session = Depends(obter_conexao)):
+    pendentes = db.query(LocacaoModel).filter_by(agencia_id=agencia_id, status="PENDENTE").all()
+    lista = []
+    for loc in pendentes:
+        cli = db.query(ClienteModel).get(loc.cliente_id)
+        veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
+        lista.append({"id": loc.id, "dias": loc.dias_contratados, "valor_total": loc.valor_estimado, "cliente": cli, "veiculo": veic})
+    return lista
+
+
+@router.put("/reservas/{reserva_id}/responder")
+def responder_reserva(reserva_id: int, aprovar: str = Form(...), db: Session = Depends(obter_conexao)):
+    loc = db.query(LocacaoModel).get(reserva_id)
+    veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
+    if aprovar == "true":
+        loc.status = "ATIVA"
+        veic.status = "alugado"
+    else:
+        loc.status = "RECUSADA"
+        veic.status = "disponível"
+    db.commit()
+    return {"ok": True}
 
 
 @router.post("/agencias/{agencia_id}/veiculos")
