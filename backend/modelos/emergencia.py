@@ -1,6 +1,23 @@
 from datetime import datetime
 from backend.modelos.enums import Status, StatusLocacao, TipoEmergencia, StatusEmergencia
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from backend.database.conexao_postgres import Base
 
+class EmergenciaModel(Base):
+    __tablename__ = "emergencias"
+
+    id = Column(Integer, primary_key=True, index=True)
+    locacao_id = Column(Integer, nullable=False)
+    agencia_id = Column(Integer, nullable=False) # Para notificar diretamente a agência dona do carro
+    tipo = Column(String(50), nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    descricao = Column(Text, nullable=True)
+    status = Column(String(30), default="ABERTO")
+    protocolo_seguro = Column(String(50), nullable=True)
+    data_hora = Column(DateTime, default=datetime.now)
 class EmergenciaError(Exception):
     pass
 

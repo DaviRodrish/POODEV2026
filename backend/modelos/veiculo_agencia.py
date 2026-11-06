@@ -15,8 +15,8 @@ class VeiculoAgenciaModel(Base):
     combustivel_nivel = Column(Float, default=1.0)
     quilometragem = Column(Integer, default=0)
     km_rev = Column(Integer, default=10000)
-    fipeP = Column(Float, nullable=True)
-    fipeA = Column(Float, nullable=True)
+    fipeP = Column(String, nullable=True)
+    fipeA = Column(String, nullable=True)
 
     def abastecer(self, nivel):
         if nivel < 0 or nivel > 1:
