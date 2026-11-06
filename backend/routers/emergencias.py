@@ -1,43 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from backend.database.conexao_postgres import obter_conexao
 from backend.modelos.emergencia import Emergencia, EmergenciaError, EmergenciaModel
-from backend.modelos.locacao import Locacao as LocacaoModel
+from backend.modelos.locacao import LocacaoModel
 
 router = APIRouter(prefix="/api", tags=["Emergências"])
 
-class AlertaEmergenciaSchema(BaseModel):
-    locacao_id: int
-    tipo: str
-    latitude: float
-    longitude: float
-    descricao: str = ""
-
 @router.post("/emergencias")
 async def emitir_alerta_emergencia(
-    dados: AlertaEmergenciaSchema,
+    locacao_id: int = Form(...),
+    tipo: str = Form(...),
+    latitude: float = Form(...),
+    longitude: float = Form(...),
+    descricao: str = Form(""),
     db: Session = Depends(obter_conexao)
 ):
     try:
-        locacao_db = db.query(LocacaoModel).filter(LocacaoModel.id == dados.locacao_id).first()
+        locacao_db = db.query(LocacaoModel).filter(LocacaoModel.id == locacao_id).first()
         if not locacao_db:
             raise HTTPException(status_code=404, detail="Locação não encontrada.")
 
         alerta = Emergencia(
             locacao=locacao_db,
-            tipo=dados.tipo,
-            latitude=dados.latitude,
-            longitude=dados.longitude,
-            descricao=dados.descricao
+            tipo=tipo,
+            latitude=latitude,
+            longitude=longitude,
+            descricao=descricao
         )
 
         protocolo = alerta.acionar_seguro()
 
         nova_emergencia = EmergenciaModel(
-            locacao_id=dados.locacao_id,
-            agencia_id=locacao_db.veiculo.agencia_id,
+            locacao_id=locacao_id,
+            agencia_id=locacao_db.agencia_id,
             tipo=alerta.tipo,
             latitude=alerta.latitude,
             longitude=alerta.longitude,
