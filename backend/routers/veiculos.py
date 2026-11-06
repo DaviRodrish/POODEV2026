@@ -173,3 +173,74 @@ async def cadastrar_veiculo_agencia(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/veiculos/{veiculo_id}/quilometragem")
+def atualizar_quilometragem_veiculo(
+    veiculo_id: int,
+    quilometragem: float = Form(...),
+    db: Session = Depends(obter_conexao)
+):
+    veiculo = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == veiculo_id).first()
+    if not veiculo:
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+
+    km_atual = veiculo.quilometragem or 0
+    if quilometragem < km_atual:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Quilometragem inválida: {quilometragem} km não pode ser menor que o odômetro atual ({km_atual} km)"
+        )
+
+    veiculo.quilometragem = int(quilometragem)
+    db.commit()
+    db.refresh(veiculo)
+
+    tipo_veiculo = "NOVO" if veiculo.quilometragem <= 10000 else "USADO"
+    return {
+        "sucesso": True,
+        "mensagem": "Odômetro atualizado com sucesso",
+        "veiculo_id": veiculo.id,
+        "quilometragem": veiculo.quilometragem,
+        "tipo": tipo_veiculo
+    }
+
+
+@router.put("/veiculos/{veiculo_id}/vistoria")
+def atualizar_vistoria_veiculo(
+    veiculo_id: int,
+    quilometragem: float = Form(...),
+    combustivel_nivel: float = Form(...),
+    db: Session = Depends(obter_conexao)
+):
+    veiculo = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == veiculo_id).first()
+    if not veiculo:
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+
+    km_atual = veiculo.quilometragem or 0
+    if quilometragem < km_atual:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Quilometragem inválida: {quilometragem} km não pode ser menor que o odômetro atual ({km_atual} km)"
+        )
+
+    if combustivel_nivel < 0.0 or combustivel_nivel > 1.0:
+        raise HTTPException(
+            status_code=400,
+            detail="Nível de combustível inválido: deve estar entre 0.0 (vazio) e 1.0 (tanque cheio)"
+        )
+
+    veiculo.quilometragem = int(quilometragem)
+    veiculo.combustivel_nivel = round(float(combustivel_nivel), 2)
+    db.commit()
+    db.refresh(veiculo)
+
+    tipo_veiculo = "NOVO" if veiculo.quilometragem <= 10000 else "USADO"
+    return {
+        "sucesso": True,
+        "mensagem": "Vistoria registrada com sucesso (odômetro e combustível atualizados)",
+        "veiculo_id": veiculo.id,
+        "quilometragem": veiculo.quilometragem,
+        "combustivel_nivel": veiculo.combustivel_nivel,
+        "tipo": tipo_veiculo
+    }
