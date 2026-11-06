@@ -1,3 +1,4 @@
+import re
 from backend.modelos.fipe import ServicoFipe
 
 class NivelCombustivelError(ValueError):
@@ -37,6 +38,16 @@ class VeiculoModel:
     def ano_nome(self):
         return str(self.ano_modelo) if self.ano_modelo else "Ano FIPE"
 
+    @property
+    def cilindrada(self) -> float:
+        nome = str(self.nome_modelo or "").lower()
+        if "eletrico" in nome or "elétrico" in nome:
+            return 0.0
+        match = re.search(r"(\d+\.\d+)", nome)
+        if match:
+            return float(match.group(1))
+        return 1.0
+
     def _converter_valor_para_float(self, valor_str):
         if not valor_str:
             return 0.0
@@ -62,7 +73,8 @@ class Veiculo:
         valor_mercado,
         valor_fipe,
         capacidade_tanque=50.0,
-        intervalo_revisao=10000
+        intervalo_revisao=10000,
+        cilindrada=None
     ):
         self.placa = placa
         self.marca = marca
@@ -76,6 +88,7 @@ class Veiculo:
         self.intervalo_revisao = intervalo_revisao
         self._km_ultima_revisao = (quilometragem // intervalo_revisao) * intervalo_revisao
         self._nivel_combustivel = 1.0
+        self._cilindrada = cilindrada
 
     @property
     def quilometragem(self):
@@ -84,6 +97,18 @@ class Veiculo:
     @property
     def nivel_combustivel(self):
         return self._nivel_combustivel
+
+    @property
+    def cilindrada(self) -> float:
+        if self._cilindrada is not None:
+            return float(self._cilindrada)
+        nome = str(self.modelo or "").lower()
+        if "eletrico" in nome or "elétrico" in nome:
+            return 0.0
+        match = re.search(r"(\d+\.\d+)", nome)
+        if match:
+            return float(match.group(1))
+        return 1.0
 
     def abastecer(self, nivel):
         if nivel < 0 or nivel > 1:
