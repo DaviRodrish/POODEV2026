@@ -110,6 +110,17 @@ class Veiculo:
             return float(match.group(1))
         return 1.0
 
+    @property
+    def tipo(self):
+        from backend.modelos.enums import Veiculo as TipoVeiculo
+        return TipoVeiculo.NOVO if self._quilometragem <= 10000 else TipoVeiculo.USADO
+
+    def fipeAlert(self) -> bool:
+        if not self.valor_mercado or self.valor_mercado <= 0:
+            return False
+        desvalorizacao = (self.valor_mercado - self.valor_fipe) / self.valor_mercado
+        return desvalorizacao >= 0.15
+
     def abastecer(self, nivel):
         if nivel < 0 or nivel > 1:
             raise NivelCombustivelError(f"Nível de combustível inválido: {nivel}")

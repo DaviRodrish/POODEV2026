@@ -37,5 +37,6 @@ class TipoEmergencia(Enum):
 class StatusEmergencia(Enum):
     ABERTO = "ABERTO"
     EM_ATENDIMENTO = "EM_ATENDIMENTO"
+    AGUARDANDO_CLIENTE = "AGUARDANDO_CLIENTE"
     RESOLVIDO = "RESOLVIDO"
     CANCELADO = "CANCELADO"
