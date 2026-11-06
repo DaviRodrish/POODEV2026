@@ -4,6 +4,7 @@ from datetime import date, timedelta
 
 from backend.database.conexao_postgres import obter_conexao
 from backend.modelos.locacao import Locacao, ErroLocacao
+from backend.modelos.veiculo import VeiculoModel
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
 from backend.modelos.cliente import ClienteModel
 from backend.modelos.enums import StatusLocacao
@@ -58,6 +59,69 @@ async def solicitar_reserva(
     except ErroLocacao as el:
         # Captura as exceções de negócio da sua classe (CNH vencida, veículo indisponível, etc.)
         raise HTTPException(status_code=400, detail=str(el))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/catalogo/veiculos")
+def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
+    return db.query(VeiculoAgenciaModel).all()
+
+
+@router.get("/agencias/{agencia_id}/reservas-pendentes")
+def listar_reservas_pendentes(agencia_id: int):
+    return []
+
+
+@router.post("/agencias/{agencia_id}/veiculos")
+async def cadastrar_veiculo_agencia(
+    agencia_id: int,
+    placa: str = Form(...),
+    marca_codigo: str = Form(...),
+    modelo_codigo: str = Form(...),
+    ano_codigo: str = Form(...),
+    valor_diaria: float = Form(...),
+    db: Session = Depends(obter_conexao)
+):
+    try:
+        placa_limpa = placa.strip().upper()
+        existente = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.placa == placa_limpa).first()
+        if existente:
+            raise HTTPException(status_code=400, detail="Já existe um veículo cadastrado com esta placa.")
+
+        veic_fipe = VeiculoModel(
+            placa=placa_limpa,
+            marca_id=marca_codigo,
+            modelo_id=modelo_codigo,
+            ano_id=ano_codigo
+        )
+
+        novo_veiculo = VeiculoAgenciaModel(
+            agencia_id=agencia_id,
+            placa=placa_limpa,
+            marca=veic_fipe.marca_nome,
+            modelo=veic_fipe.modelo_nome,
+            ano=int(veic_fipe.ano_modelo or 2024),
+            valor_diaria=float(valor_diaria),
+            status="disponível",
+            fipeP=veic_fipe.valor_fipe_texto,
+            fipeA=ano_codigo
+        )
+
+        db.add(novo_veiculo)
+        db.commit()
+        db.refresh(novo_veiculo)
+
+        return {
+            "success": True,
+            "message": "Veículo cadastrado com sucesso na frota!",
+            "veiculo": novo_veiculo
+        }
+    except HTTPException as he:
+        raise he
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
