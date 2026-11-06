@@ -1,6 +1,21 @@
-from datetime import date
+from datetime import date, datetime
+from sqlalchemy import Column, Integer, Float, String, Boolean, DateTime, ForeignKey
+from backend.database.conexao_postgres import Base
 from backend.modelos.enums import Status, StatusLocacao
 from backend.modelos.cnh import CNH
+
+class LocacaoModel(Base):
+    __tablename__ = "locacoes"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=False)
+    veiculo_id = Column(Integer, ForeignKey("veiculos.id"), nullable=False)
+    agencia_id = Column(Integer, ForeignKey("agencias.id"), nullable=False)
+    dias_contratados = Column(Integer, nullable=False, default=1)
+    valor_estimado = Column(Float, default=0.0)
+    status = Column(String(30), default="PENDENTE")
+    ativa = Column(Boolean, default=True)
+    data_criacao = Column(DateTime, default=datetime.now)
 
 class ErroLocacao(Exception):
     pass
@@ -17,11 +32,11 @@ class Locacao:
             raise ErroLocacao("Cliente bloqueado.")
         elif hasattr(cli, "pode_alugar") and not cli.pode_alugar():
             raise ErroLocacao("Cliente bloqueado.")
-        if hasattr(veic, "status") and veic.status != Status.DISPONIVEL:
+        if hasattr(veic, "status") and veic.status not in (Status.DISPONIVEL, "disponível"):
             raise ErroLocacao("Veiculo indisponivel.")
 
         cli_cnh = getattr(cli, "cnh", None)
-        if cli_cnh:
+        if cli_cnh and cli_cnh != "Não informada":
             if isinstance(cli_cnh, str):
                 cli_cnh = CNH(cli_cnh)
             if hasattr(cli_cnh, "esta_valida") and not cli_cnh.esta_valida(fim):
