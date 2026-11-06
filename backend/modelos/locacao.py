@@ -32,7 +32,7 @@ class Locacao:
             raise ErroLocacao("Cliente bloqueado.")
         elif hasattr(cli, "pode_alugar") and not cli.pode_alugar():
             raise ErroLocacao("Cliente bloqueado.")
-        if hasattr(veic, "status") and veic.status not in (Status.DISPONIVEL, "disponível"):
+        if hasattr(veic, "status") and "DISPON" not in str(veic.status).upper():
             raise ErroLocacao("Veiculo indisponivel.")
 
         cli_cnh = getattr(cli, "cnh", None)
