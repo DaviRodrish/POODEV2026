@@ -26,7 +26,7 @@ class Emergencia:
         if locacao is None:
             raise EmergenciaError("Locacao obrigatoria.")
 
-        if hasattr(locacao, "status") and locacao.status != StatusLocacao.ATIVA:
+        if hasattr(locacao, "status") and locacao.status not in ("APROVADA", "ATIVA", StatusLocacao.ATIVA):
             raise EmergenciaError("Locacao nao ativa.")
 
         if isinstance(tipo, TipoEmergencia):
