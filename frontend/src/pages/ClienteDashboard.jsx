@@ -28,7 +28,16 @@ export function ClienteDashboard() {
       return;
     }
 
-    alert(`Reserva iniciada para o veículo ${veiculo.marca} ${veiculo.modelo} (${veiculo.placa})!`);
+    const dias = prompt("Quantos dias deseja alugar?", "1");
+    if (!dias) return;
+
+    const form = new FormData();
+    form.append("cliente_id", usuarioLogado.id);
+    form.append("veiculo_id", veiculo.id);
+    form.append("dias", dias);
+
+    fetch("http://localhost:8000/api/reservas", { method: "POST", body: form })
+      .then(() => alert(`Pedido de reserva enviado para a agência!`));
   };
 
   const handleAcionarSeguro = () => {
@@ -115,7 +124,8 @@ export function ClienteDashboard() {
                 const combustivelPct = Math.round((v.combustivel_nivel ?? 1.0) * 100);
                 const kmAtual = v.quilometragem || 0;
                 const emRevisao = v.precisa_revisao || v.status === 'manutenção';
-                const bloqueadoParaAluguel = isBloqueado || emRevisao;
+                const alugado = v.status === 'alugado';
+                const bloqueadoParaAluguel = isBloqueado || emRevisao || alugado;
 
                 return (
                   <div key={v.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition">
@@ -156,7 +166,7 @@ export function ClienteDashboard() {
                           emRevisao ? 'Veículo aguardando revisão preventiva' : 'Clique para reservar'
                         }
                       >
-                        {isBloqueado ? 'Conta Bloqueada' : emRevisao ? 'Em Revisão' : 'Reservar'}
+                        {isBloqueado ? 'Conta Bloqueada' : alugado ? 'Alugado' : emRevisao ? 'Em Revisão' : 'Reservar'}
                       </button>
                     </div>
                   </div>
