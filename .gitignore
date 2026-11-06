@@ -28,3 +28,6 @@ backend/uploads/
 *.tmp
 *.bak
 .vscode
+
+__pycache__/
+*.py[cod]

@@ -5,8 +5,8 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
   const { user, logout } = useContext(AuthContext);
   const agenciaLogada = propAgencia || user;
   const onLogout = propLogout || logout;
+  
   const [abaAtiva, setAbaAtiva] = useState('emergencias');
-
   const [frota, setFrota] = useState([]);
   const [emergencias, setEmergencias] = useState([]);
   const [reservasPendentes, setReservasPendentes] = useState([]);
@@ -30,6 +30,7 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
 
     const intervaloEmergencias = setInterval(() => {
       carregarEmergencias();
+      carregarReservasPendentes();
     }, 10000);
 
     return () => clearInterval(intervaloEmergencias);
@@ -196,13 +197,12 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
   return (
     <div className="min-h-screen bg-slate-100 flex font-sans">
       
-      {/* SIDEBAR LATERAL */}
+      {/* SIDEBAR DA AGÊNCIA */}
       <aside className="w-72 bg-slate-900 text-slate-300 flex flex-col justify-between p-6 border-r border-slate-800 shadow-xl hidden md:flex">
         <div className="space-y-8">
-          {/* Perfil da Agência */}
           <div className="flex items-center gap-3 px-2">
-            <div className="h-10 w-25 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow">
-              {agenciaLogada?.nome ? agenciaLogada.nome.charAt(0).toUpperCase() : 'Agência'}
+            <div className="h-10 w-12 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow">
+              {agenciaLogada?.nome ? agenciaLogada.nome.charAt(0).toUpperCase() : 'A'}
             </div>
             <div className="overflow-hidden">
               <h2 className="text-white font-bold text-sm truncate">{agenciaLogada?.nome}</h2>
@@ -210,19 +210,14 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
             </div>
           </div>
 
-          {/* Navegação da Sidebar */}
           <nav className="space-y-2">
             <button
               onClick={() => setAbaAtiva('emergencias')}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                abaAtiva === 'emergencias' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                abaAtiva === 'emergencias' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span>🚨</span> Alertas SOS
-              </div>
+              <div className="flex items-center gap-3"><span>🚨</span> Alertas SOS</div>
               {totalAlertasAbertos > 0 && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] text-white font-bold animate-pulse">
                   {totalAlertasAbertos}
@@ -233,14 +228,10 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
             <button
               onClick={() => setAbaAtiva('reservas')}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                abaAtiva === 'reservas' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                abaAtiva === 'reservas' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span>📋</span> Solicitações
-              </div>
+              <div className="flex items-center gap-3"><span>📋</span> Solicitações</div>
               {totalReservasPendentes > 0 && (
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] text-white font-bold">
                   {totalReservasPendentes}
@@ -251,19 +242,14 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
             <button
               onClick={() => setAbaAtiva('frota')}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                abaAtiva === 'frota' 
-                  ? 'bg-blue-600 text-white shadow-lg' 
-                  : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                abaAtiva === 'frota' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span>🚗</span> Frota & FIPE
-              </div>
+              <div className="flex items-center gap-3"><span>🚗</span> Frota & FIPE</div>
             </button>
           </nav>
         </div>
 
-        {/* Rodapé da Sidebar (Terminar Sessão) */}
         <div>
           {onLogout && (
             <button 
@@ -278,8 +264,6 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
 
       {/* CONTEÚDO PRINCIPAL */}
       <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        
-        {/* Header Superior (Mobile & Título da Página) */}
         <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center shadow-sm">
           <div>
             <h1 className="text-xl font-extrabold text-slate-900 capitalize">
@@ -289,19 +273,11 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
             </h1>
             <p className="text-xs text-slate-500">Painel de Controlo Administrativo</p>
           </div>
-
-          {/* Botão de Terminar Sessão para Dispositivos Móveis */}
           {onLogout && (
-            <button 
-              onClick={onLogout}
-              className="md:hidden bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold"
-            >
-              Sair
-            </button>
+            <button onClick={onLogout} className="md:hidden bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Sair</button>
           )}
         </header>
 
-        {/* Corpo Dinâmico Conforme a Aba Ativa */}
         <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
 
           {/* ABA 1: EMERGÊNCIAS */}
@@ -310,7 +286,7 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">Monitorização de Ocorrências</h2>
-                  <p className="text-xs text-slate-500">Alertas SOS enviados pelos clientes em circulação (Atualização a cada 10s)</p>
+                  <p className="text-xs text-slate-500">Alertas SOS enviados pelos clientes em circulação</p>
                 </div>
                 {totalAlertasAbertos > 0 && (
                   <span className="bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
@@ -331,28 +307,20 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
                     <div key={alerta.id} className="bg-rose-50/60 border border-rose-200 rounded-xl p-5 flex flex-col justify-between gap-4 shadow-sm">
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="bg-rose-600 text-white text-[10px] tracking-wider px-2.5 py-1 rounded-md font-bold uppercase">
-                            {alerta.tipo}
-                          </span>
-                          <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
-                            {alerta.status}
-                          </span>
+                          <span className="bg-rose-600 text-white text-[10px] tracking-wider px-2.5 py-1 rounded-md font-bold uppercase">{alerta.tipo}</span>
+                          <span className="text-[11px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">{alerta.status}</span>
                         </div>
                         <p className="text-xs text-slate-500">Recebido em: {alerta.data_hora}</p>
                         
                         <div className="bg-white/80 p-3 rounded-lg border border-rose-100 space-y-1 text-xs">
                           <p className="text-slate-700"><strong>Locação ID:</strong> {alerta.locacao_id}</p>
                           <p className="text-slate-700"><strong>Seguro:</strong> {alerta.protocolo_seguro || "N/A"}</p>
-                          {alerta.descricao && (
-                            <p className="text-slate-600 italic">"{alerta.descricao}"</p>
-                          )}
+                          {alerta.descricao && <p className="text-slate-600 italic">"{alerta.descricao}"</p>}
                         </div>
                       </div>
 
                       <div className="pt-2 border-t border-rose-200/60 flex justify-between items-center">
-                        <span className="text-[11px] text-slate-500 truncate max-w-[150px]">
-                          📍 {alerta.latitude}, {alerta.longitude}
-                        </span>
+                        <span className="text-[11px] text-slate-500 truncate max-w-[150px]">📍 {alerta.latitude}, {alerta.longitude}</span>
                         <a 
                           href={`https://www.google.com/maps?q=${alerta.latitude},${alerta.longitude}`} 
                           target="_blank" 
@@ -369,12 +337,12 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
             </section>
           )}
 
-          {/* ABA 2: RESERVAS PENDENTES */}
+          {/* ABA 2: RESERVAS PENDENTES (COM CNH E CLASSE/APTIDÃO) */}
           {abaAtiva === 'reservas' && (
             <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
               <div className="mb-6">
                 <h2 className="text-lg font-bold text-slate-900">Aprovação de Reservas</h2>
-                <p className="text-xs text-slate-500">Analise os dados do cliente e autorize ou recuse a alocação</p>
+                <p className="text-xs text-slate-500">Analise os dados cadastrais, CNH e aptidão do cliente antes de autorizar</p>
               </div>
 
               {reservasPendentes.length === 0 ? (
@@ -387,20 +355,17 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
                     <div key={item.id} className="bg-amber-50/50 border border-amber-200 rounded-xl p-5 flex flex-col justify-between gap-4 shadow-sm">
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="bg-amber-600 text-white text-[10px] uppercase font-bold px-2.5 py-1 rounded-md">
-                            Pendente de Aprovação
-                          </span>
-                          <span className="text-xs font-bold text-emerald-700">
-                            Total: R$ {item.valor_total}
-                          </span>
+                          <span className="bg-amber-600 text-white text-[10px] uppercase font-bold px-2.5 py-1 rounded-md">Pendente de Aprovação</span>
+                          <span className="text-xs font-bold text-emerald-700">Total: R$ {item.valor_total}</span>
                         </div>
 
                         <div className="bg-white p-3 rounded-lg border border-amber-100 space-y-1 text-xs">
-                          <p className="text-slate-900 font-bold">👤 Cliente: {item.cliente.nome}</p>
-                          <p className="text-slate-600">E-mail: {item.cliente.email}</p>
-                          <p className="text-slate-600">CNH: {item.cliente.cnh || "Não informada"}</p>
+                          <p className="text-slate-900 font-bold">👤 Cliente: {item.cliente?.nome || 'Nome não inf.'}</p>
+                          <p className="text-slate-600">E-mail: {item.cliente?.email || 'N/A'}</p>
+                          <p className="text-slate-600">CNH: <span className="font-mono font-semibold">{item.cliente?.cnh || 'Não informada'}</span></p>
+                          <p className="text-slate-600">Aptidão / Classe: <span className="font-bold text-emerald-600">{item.cliente?.cnh_valida !== false ? 'Apto para Alugar ✅' : 'Verificar Pendência ⚠️'}</span></p>
                           <hr className="my-1 border-slate-100" />
-                          <p className="text-slate-900 font-medium">🚗 Veículo: {item.veiculo.modelo} ({item.veiculo.placa})</p>
+                          <p className="text-slate-900 font-medium">🚗 Veículo: {item.veiculo?.modelo || 'Modelo'} ({item.veiculo?.placa || 'Placa'})</p>
                           <p className="text-slate-700 font-semibold">📅 Período solicitado: {item.dias} dia(s)</p>
                         </div>
                       </div>
@@ -429,7 +394,6 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
           {/* ABA 3: GESTÃO DE FROTA & FIPE */}
           {abaAtiva === 'frota' && (
             <div className="space-y-6">
-              {/* Cadastro FIPE */}
               <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
                 <div className="mb-6">
                   <h2 className="text-lg font-bold text-slate-900">Adicionar Novo Veículo à Frota</h2>
@@ -445,103 +409,55 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
                 <form onSubmit={cadastrarVeiculo} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Placa do Veículo</label>
-                    <input 
-                      type="text" 
-                      placeholder="Ex: ABC-1234" 
-                      value={placa} 
-                      onChange={(e) => setPlaca(e.target.value)} 
-                      required
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm uppercase focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                    />
+                    <input type="text" placeholder="Ex: ABC-1234" value={placa} onChange={(e) => setPlaca(e.target.value)} required className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm uppercase focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">1. Marca (FIPE)</label>
-                    <select 
-                      value={marcaCodigo} 
-                      onChange={selecionarMarca} 
-                      required
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                    >
+                    <select value={marcaCodigo} onChange={selecionarMarca} required className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
                       <option value="">Selecione a Marca...</option>
-                      {marcas.map(m => (
-                        <option key={m.codigo} value={m.codigo}>{m.nome}</option>
-                      ))}
+                      {marcas.map(m => (<option key={m.codigo} value={m.codigo}>{m.nome}</option>))}
                     </select>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">2. Modelo (FIPE)</label>
-                    <select 
-                      value={modeloCodigo} 
-                      onChange={selecionarModelo} 
-                      required
-                      disabled={!marcaCodigo}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400 transition"
-                    >
+                    <select value={modeloCodigo} onChange={selecionarModelo} required disabled={!marcaCodigo} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400 transition">
                       <option value="">Selecione o Modelo...</option>
-                      {modelos.map(mod => (
-                        <option key={mod.codigo} value={mod.codigo}>{mod.nome}</option>
-                      ))}
+                      {modelos.map(mod => (<option key={mod.codigo} value={mod.codigo}>{mod.nome}</option>))}
                     </select>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">3. Ano / Versão (FIPE)</label>
-                    <select 
-                      value={anoCodigo} 
-                      onChange={(e) => setAnoCodigo(e.target.value)} 
-                      required
-                      disabled={!modeloCodigo}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400 transition"
-                    >
+                    <select value={anoCodigo} onChange={(e) => setAnoCodigo(e.target.value)} required disabled={!modeloCodigo} className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400 transition">
                       <option value="">Selecione o Ano...</option>
-                      {anos.map(a => (
-                        <option key={a.codigo} value={a.codigo}>{a.nome}</option>
-                      ))}
+                      {anos.map(a => (<option key={a.codigo} value={a.codigo}>{a.nome}</option>))}
                     </select>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Valor da Diária (R$)</label>
-                    <input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="150.00" 
-                      value={valorDiaria} 
-                      onChange={(e) => setValorDiaria(e.target.value)} 
-                      required
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                    />
+                    <input type="number" step="0.01" placeholder="150.00" value={valorDiaria} onChange={(e) => setValorDiaria(e.target.value)} required className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition" />
                   </div>
 
                   <div className="flex items-end">
-                    <button 
-                      type="submit" 
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition shadow-sm hover:shadow"
-                    >
-                      Cadastrar Veículo 🚗
-                    </button>
+                    <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl text-sm transition shadow-sm hover:shadow">Cadastrar Veículo 🚗</button>
                   </div>
                 </form>
               </section>
 
-              {/* Listagem de Frota */}
               <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">Frota Registada</h2>
                     <p className="text-xs text-slate-500">Veículos ativos sob gestão desta agência</p>
                   </div>
-                  <span className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-xl text-xs font-bold">
-                    Total: {frota.length}
-                  </span>
+                  <span className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-xl text-xs font-bold">Total: {frota.length}</span>
                 </div>
 
                 {frota.length === 0 ? (
-                  <div className="py-12 text-center text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">
-                    Ainda não existem veículos registados nesta agência.
-                  </div>
+                  <div className="py-12 text-center text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">Ainda não existem veículos registados nesta agência.</div>
                 ) : (
                   <div className="overflow-x-auto border border-slate-200 rounded-xl">
                     <table className="w-full text-left border-collapse">
@@ -565,10 +481,7 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
                             <td className="p-4 text-slate-600">
                               <div className="flex items-center gap-2">
                                 <div className="w-16 bg-slate-200 rounded-full h-2 overflow-hidden">
-                                  <div 
-                                    className="bg-emerald-500 h-full rounded-full" 
-                                    style={{ width: `${Math.round((v.combustivel_nivel || 1) * 100)}%` }}
-                                  ></div>
+                                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.round((v.combustivel_nivel || 1) * 100)}%` }}></div>
                                 </div>
                                 <span className="text-xs">{Math.round((v.combustivel_nivel || 1) * 100)}%</span>
                               </div>

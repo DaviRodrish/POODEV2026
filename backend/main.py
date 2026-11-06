@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from backend.routers import emergencias, fipe, veiculos, auth
 
 load_dotenv()
-
+        
 app = FastAPI(title="API Sistema de Aluguel de Carros")
 
 app.add_middleware(
