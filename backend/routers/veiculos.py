@@ -94,11 +94,30 @@ def responder_reserva(reserva_id: int, aprovar: str = Form(...), db: Session = D
     loc = db.query(LocacaoModel).get(reserva_id)
     veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
     if aprovar == "true":
-        loc.status = "ATIVA"
+        loc.status = "APROVADA"
         veic.status = "alugado"
     else:
         loc.status = "RECUSADA"
         veic.status = "disponível"
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/clientes/{cliente_id}/reservas")
+def listar_reservas_cliente(cliente_id: int, db: Session = Depends(obter_conexao)):
+    reservas = db.query(LocacaoModel).filter_by(cliente_id=cliente_id).all()
+    return [
+        {"id": r.id, "status": r.status, "veiculo_id": r.veiculo_id, "dias": r.dias_contratados, "valor_total": r.valor_estimado}
+        for r in reservas
+    ]
+
+
+@router.put("/reservas/{reserva_id}/devolver")
+def devolver_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
+    loc = db.query(LocacaoModel).get(reserva_id)
+    veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
+    loc.status = "CONCLUIDA"
+    veic.status = "disponível"
     db.commit()
     return {"ok": True}
 
