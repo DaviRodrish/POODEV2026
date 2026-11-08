@@ -147,10 +147,7 @@ class Veiculo:
         taxa = (litros * 5.89) * 1.15
         return {"cobrar": True, "taxa": round(taxa, 2), "litros_faltantes": round(litros, 1)}
 
-    def emissao(self, km, estrategia=None) -> float:
+    def emissao(self, km, estrategia) -> float:
         if km < 0:
             raise ValueError("Quilometragem não pode ser negativa")
-        if estrategia is None:
-            from backend.modelos.emissao import Flex
-            estrategia = Flex()
         return estrategia.calc(km, self.cilindrada)
