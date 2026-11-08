@@ -284,7 +284,7 @@ export function ClienteDashboard() {
                 abaAtiva === 'sos' ? 'bg-rose-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-3"><span>🚨</span> Central SOS</div>
+              <div className="flex items-center gap-3"><span>🚨</span> Emergência</div>
             </button>
           </nav>
         </div>
@@ -319,7 +319,7 @@ export function ClienteDashboard() {
             <h1 className="text-xl font-extrabold text-slate-900 capitalize">
               {abaAtiva === 'catalogo' && 'Catálogo de Veículos Disponíveis'}
               {abaAtiva === 'minhas-reservas' && 'As Minhas Reservas e Alocações'}
-              {abaAtiva === 'sos' && 'Acionar Assistência e Alerta SOS'}
+              {abaAtiva === 'sos' && 'Solicitar Emergência'}
             </h1>
             <p className="text-xs text-slate-500">Painel do Cliente • Rent-a-Car</p>
           </div>
@@ -514,8 +514,8 @@ export function ClienteDashboard() {
 
               <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
                 <div className="mb-6 border-b border-slate-100 pb-4">
-                  <h2 className="text-lg font-bold text-rose-600 flex items-center gap-2">
-                    <span>🚨</span> Disparar Alerta SOS de Emergência
+                  <h2 className="text-lg font-bold text-rose-600">
+                    Solicitar Emergência
                   </h2>
                   <p className="text-xs text-slate-500">A localização GPS atual será recolhida e enviada automaticamente à agência</p>
                 </div>
@@ -550,7 +550,7 @@ export function ClienteDashboard() {
                     type="submit" 
                     className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg mt-4"
                   >
-                    ENVIAR ALERTA SOS COM GPS AUTOMÁTICO 🚨
+                    Enviar Alerta
                   </button>
                 </form>
 
