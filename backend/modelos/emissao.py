@@ -1,7 +1,6 @@
 from abc import ABC
 
 class Emissao(ABC):
-    """Classe base abstrata do padrao GoF Strategy com Template Method."""
     taxa_base = 0.0
 
     def calc(self, km, cilindrada=1.0):
