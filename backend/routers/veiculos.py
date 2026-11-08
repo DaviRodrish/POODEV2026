@@ -75,7 +75,26 @@ async def solicitar_reserva(
 
 @router.get("/catalogo/veiculos")
 def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
-    return db.query(VeiculoAgenciaModel).all()
+    veiculos = db.query(VeiculoAgenciaModel).all()
+    resultado = []
+    for v in veiculos:
+        resultado.append({
+            "id": v.id,
+            "agencia_id": v.agencia_id,
+            "placa": v.placa,
+            "marca": v.marca,
+            "modelo": v.modelo,
+            "ano": v.ano,
+            "valor_diaria": v.valor_diaria,
+            "status": v.status,
+            "combustivel_nivel": v.combustivel_nivel,
+            "quilometragem": v.quilometragem,
+            "km_rev": v.km_rev,
+            "fipeP": v.fipeP,
+            "fipeA": v.fipeA,
+            "precisa_revisao": v.precisa_revisao(),
+        })
+    return resultado
 
 
 @router.get("/agencias/{agencia_id}/reservas-pendentes")
