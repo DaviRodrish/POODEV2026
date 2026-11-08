@@ -38,9 +38,12 @@ class VeiculoAgenciaModel(Base):
 
     def precisa_revisao(self):
         limite = self.km_rev or 10000
-        return self.quilometragem >= limite
+        return (self.quilometragem or 0) >= limite
 
     def registrar_revisao(self):
         self.km_rev = self.quilometragem + 10000
         if self.status == "manutenção":
             self.status = "disponível"
+
+    def colocar_em_manutencao(self):
+        self.status = "manutenção"

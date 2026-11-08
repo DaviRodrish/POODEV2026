@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from backend.database.conexao_postgres import obter_conexao
 from backend.modelos.emergencia import Emergencia, EmergenciaError, EmergenciaModel
 from backend.modelos.locacao import LocacaoModel
+from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
 
 router = APIRouter(prefix="/api", tags=["Emergências"])
 
@@ -42,6 +43,10 @@ async def emitir_alerta_emergencia(
             protocolo_seguro=protocolo,
             data_hora=alerta.data_hora
         )
+
+        veic_db = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == locacao_db.veiculo_id).first()
+        if veic_db:
+            veic_db.colocar_em_manutencao()
 
         db.add(nova_emergencia)
         db.commit()
