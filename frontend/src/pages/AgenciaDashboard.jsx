@@ -386,6 +386,12 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
 
         <div className="p-8 max-w-7xl mx-auto w-full space-y-6">
 
+          {mensagemFeedback && (
+            <div className={`p-4 rounded-xl text-sm font-medium ${mensagemFeedback.tipo === 'sucesso' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
+              {mensagemFeedback.texto}
+            </div>
+          )}
+
           {/* ABA 1: EMERGÊNCIAS */}
           {abaAtiva === 'emergencias' && (
             <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
@@ -539,12 +545,6 @@ export function AgenciaDashboard({ agenciaLogada: propAgencia, onLogout: propLog
                   <h2 className="text-lg font-bold text-slate-900">Adicionar Novo Veículo à Frota</h2>
                   <p className="text-xs text-slate-500">Registo integrado diretamente com a Tabela FIPE</p>
                 </div>
-
-                {mensagemFeedback && (
-                  <div className={`p-4 mb-6 rounded-xl text-sm font-medium ${mensagemFeedback.tipo === 'sucesso' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>
-                    {mensagemFeedback.texto}
-                  </div>
-                )}
 
                 <form onSubmit={cadastrarVeiculo} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   <div className="space-y-1.5">
