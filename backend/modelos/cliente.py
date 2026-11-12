@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Enum
 from backend.modelos.cpf import CPF
 from backend.modelos.cnh import CNH
 from backend.modelos.usuario import Usuario, UsuarioModel
@@ -9,7 +9,7 @@ class ClienteModel(UsuarioModel):
     _cpf = Column("cpf", String, unique=True, index=True, nullable=False)
     cnh = Column(String, nullable=True)
     tipo_perfil = Column(String, default="cliente")
-    status = Column(String, default="ATIVO")
+    status = Column(Enum('ATIVO', 'BLOQUEADO', name='statuscliente', create_type=False), default='ATIVO')
     motivo = Column(String, nullable=True)
 
     def __init__(self, nome, email, cpf, cnh=None, senha="123", tipo_perfil="cliente", status="ATIVO", motivo=None):

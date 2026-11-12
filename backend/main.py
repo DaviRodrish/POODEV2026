@@ -19,8 +19,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.makedirs("backend/uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="backend/uploads"), name="uploads")
 
 # --- REGISTO DOS ROUTERS MODULARES ---
 app.include_router(emergencias.router)
