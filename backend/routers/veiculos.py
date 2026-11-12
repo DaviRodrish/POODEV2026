@@ -16,12 +16,17 @@ async def solicitar_reserva(
     cliente_id: int = Form(...),
     veiculo_id: int = Form(...),
     dias: int = Form(...),
-    ori: str = Form("Campos dos Goytacazes"), # Origem padrão ou vinda do front
-    dest: str = Form("Campos dos Goytacazes"), # Destino padrão ou vindo do front
+    motorista_secundario: str = Form("false"),
+    motorista_nome: str = Form(None),
+    motorista_cnh: str = Form(None),
+    outra_agencia: str = Form("false"),
+    agencia_destino: str = Form(None),
+    valor_total: float = Form(...), # Recebe o valor total calculado com as taxas do front
+    ori: str = Form("Campos dos Goytacazes"),
+    dest: str = Form("Campos dos Goytacazes"),
     db: Session = Depends(obter_conexao)
 ):
     try:
-        # 1. Buscar o cliente e o veículo na base de dados
         cliente_db = db.query(ClienteModel).filter(ClienteModel.id == cliente_id).first()
         if not cliente_db:
             raise HTTPException(status_code=404, detail="Cliente não encontrado.")
@@ -30,11 +35,9 @@ async def solicitar_reserva(
         if not veiculo_db:
             raise HTTPException(status_code=404, detail="Veículo não encontrado.")
 
-        # 2. Definir as datas com base na quantidade de dias escolhida pelo cliente
         ini = date.today()
         fim = ini + timedelta(days=int(dias))
 
-        # 3. Instanciar a sua classe de domínio Locacao (valida regras automaticamente)
         nova_locacao = Locacao(
             cli=cliente_db,
             veic=veiculo_db,
@@ -45,12 +48,18 @@ async def solicitar_reserva(
             dest=dest
         )
 
+        # Salva o registro incluindo os novos campos opcionais e o valor total com taxas
         registro_db = LocacaoModel(
             cliente_id=cliente_db.id,
             veiculo_id=veiculo_db.id,
             agencia_id=veiculo_db.agencia_id,
             dias_contratados=nova_locacao.qtd_dias,
-            valor_estimado=nova_locacao.total(),
+            valor_estimado=float(valor_total), # Usa o valor enviado pelo modal (com as taxas)
+            motorista_secundario=(motorista_secundario == "true"),
+            motorista_nome=motorista_nome,
+            motorista_cnh=motorista_cnh,
+            outra_agencia=(outra_agencia == "true"),
+            agencia_destino=agencia_destino,
             status="PENDENTE",
             ativa=True
         )
@@ -61,17 +70,15 @@ async def solicitar_reserva(
             "success": True,
             "message": "Solicitação de reserva criada com sucesso!",
             "qtd_dias": nova_locacao.qtd_dias,
-            "valor_total": nova_locacao.total(),
-            "status": nova_locacao.status.value if hasattr(nova_locacao.status, "value") else str(nova_locacao.status)
+            "valor_total": float(valor_total),
+            "status": "PENDENTE"
         }
 
     except ErroLocacao as el:
-        # Captura as exceções de negócio da sua classe (CNH vencida, veículo indisponível, etc.)
         raise HTTPException(status_code=400, detail=str(el))
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/catalogo/veiculos")
 def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
@@ -126,10 +133,20 @@ def responder_reserva(reserva_id: int, aprovar: str = Form(...), db: Session = D
 def listar_reservas_cliente(cliente_id: int, db: Session = Depends(obter_conexao)):
     reservas = db.query(LocacaoModel).filter_by(cliente_id=cliente_id).all()
     return [
-        {"id": r.id, "status": r.status, "veiculo_id": r.veiculo_id, "dias": r.dias_contratados, "valor_total": r.valor_estimado}
+        {
+            "id": r.id,
+            "status": r.status,
+            "veiculo_id": r.veiculo_id,
+            "dias": r.dias_contratados,
+            "valor_total": r.valor_estimado,
+            "motorista_secundario": getattr(r, "motorista_secundario", False),
+            "motorista_nome": getattr(r, "motorista_nome", None),
+            "motorista_cnh": getattr(r, "motorista_cnh", None),
+            "outra_agencia": getattr(r, "outra_agencia", False),
+            "agencia_destino": getattr(r, "agencia_destino", None)
+        }
         for r in reservas
     ]
-
 
 @router.put("/reservas/{reserva_id}/devolver")
 def devolver_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):

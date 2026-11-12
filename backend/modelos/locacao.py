@@ -13,12 +13,22 @@ class LocacaoModel(Base):
     agencia_id = Column(Integer, ForeignKey("agencias.id"), nullable=False)
     dias_contratados = Column(Integer, nullable=False, default=1)
     valor_estimado = Column(Float, default=0.0)
+    
+    # Novos campos para suportar os adicionais da locação
+    motorista_secundario = Column(Boolean, default=False)
+    motorista_nome = Column(String(150), nullable=True)
+    motorista_cnh = Column(String(50), nullable=True)
+    outra_agencia = Column(Boolean, default=False)
+    agencia_destino = Column(String(150), nullable=True)
+
     status = Column(String(30), default="PENDENTE")
     ativa = Column(Boolean, default=True)
     data_criacao = Column(DateTime, default=datetime.now)
 
 class ErroLocacao(Exception):
     pass
+
+# (Mantenha o restante da classe de domínio Locacao igual abaixo deste ponto...)
 
 class Locacao:
     def __init__(self, cli, veic, ini, fim, diaria, ori, dest, taxa=150.0):
