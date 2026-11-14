@@ -1,8 +1,11 @@
 import React from 'react';
 
-export function SidebarAgencia({ agenciaLogada, abaAtiva, setAbaAtiva, emergencias, reservasPendentes, onLogout }) {
+export function SidebarAgencia({ agenciaLogada, abaAtiva, setAbaAtiva, emergencias, reservasPendentes, frota, onLogout }) {
   const totalAlertasAbertos = Array.isArray(emergencias) ? emergencias.filter(e => e.status === 'ABERTO').length : 0;
   const totalReservasPendentes = Array.isArray(reservasPendentes) ? reservasPendentes.length : 0;
+  const totalManutencaoPendente = Array.isArray(frota)
+    ? frota.filter(v => v.status === 'manutenção' || v.precisa_revisao).length
+    : 0;
 
   return (
     <aside className="w-72 bg-slate-900 text-slate-300 flex flex-col justify-between p-6 border-r border-slate-800 shadow-xl hidden md:flex">
@@ -54,6 +57,38 @@ export function SidebarAgencia({ agenciaLogada, abaAtiva, setAbaAtiva, emergenci
           >
             <div className="flex items-center gap-3"><span>🚗</span> Frota & FIPE</div>
           </button>
+
+          <button
+            onClick={() => setAbaAtiva('manutencao')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition ${
+              abaAtiva === 'manutencao' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3"><span>🛠️</span> Manutenção</div>
+            {totalManutencaoPendente > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] text-white font-bold">
+                {totalManutencaoPendente}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setAbaAtiva('clientes')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition ${
+              abaAtiva === 'clientes' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3"><span>👥</span> Clientes</div>
+          </button>
+
+          <button
+            onClick={() => setAbaAtiva('financeiro')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition ${
+              abaAtiva === 'financeiro' ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3"><span>💵</span> Financeiro</div>
+          </button>
         </nav>
       </div>
 
@@ -63,7 +98,7 @@ export function SidebarAgencia({ agenciaLogada, abaAtiva, setAbaAtiva, emergenci
             onClick={onLogout}
             className="w-full bg-slate-800 hover:bg-rose-600/20 hover:border-rose-500 hover:text-rose-400 border border-slate-700 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
           >
-            🚪 Terminar Sessão
+            🚪 Sair
           </button>
         )}
       </div>

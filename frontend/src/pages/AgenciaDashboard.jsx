@@ -4,6 +4,9 @@ import { SidebarAgencia } from '../components/dashboard/agencia/SidebarAgencia';
 import { AbaEmergencias } from '../components/dashboard/agencia/AbaEmergencias';
 import { AbaReservas } from '../components/dashboard/agencia/AbaReservas';
 import { AbaFrota } from '../components/dashboard/agencia/AbaFrota';
+import { AbaManutencao } from '../components/dashboard/agencia/AbaManutencao';
+import { AbaFinanceiro } from '../components/dashboard/agencia/AbaFinanceiro';
+import { AbaClientes } from '../components/dashboard/agencia/AbaClientes';
 
 export function AgenciaDashboard(props) {
   const dash = useAgenciaDashboard(props.agenciaLogada, props.onLogout);
@@ -19,8 +22,11 @@ export function AgenciaDashboard(props) {
               {dash.abaAtiva === 'emergencias' && 'Central de Emergências & SOS'}
               {dash.abaAtiva === 'reservas' && 'Solicitações de Reserva de Clientes'}
               {dash.abaAtiva === 'frota' && 'Gestão de Frota e Tabela FIPE'}
+              {dash.abaAtiva === 'manutencao' && 'Oficina & Histórico de Manutenção'}
+              {dash.abaAtiva === 'clientes' && 'Gestão & Histórico de Clientes'}
+              {dash.abaAtiva === 'financeiro' && 'Financeiro & Histórico'}
             </h1>
-            <p className="text-xs text-slate-500">Painel de Controlo Administrativo</p>
+            <p className="text-xs text-slate-500">Painel Administrativo</p>
           </div>
           {dash.onLogout && (
             <button onClick={dash.onLogout} className="md:hidden bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Sair</button>
@@ -37,6 +43,9 @@ export function AgenciaDashboard(props) {
           {dash.abaAtiva === 'emergencias' && <AbaEmergencias {...dash} />}
           {dash.abaAtiva === 'reservas' && <AbaReservas {...dash} />}
           {dash.abaAtiva === 'frota' && <AbaFrota {...dash} />}
+          {dash.abaAtiva === 'manutencao' && <AbaManutencao {...dash} />}
+          {dash.abaAtiva === 'clientes' && <AbaClientes {...dash} />}
+          {dash.abaAtiva === 'financeiro' && <AbaFinanceiro {...dash} />}
         </div>
       </main>
     </div>
