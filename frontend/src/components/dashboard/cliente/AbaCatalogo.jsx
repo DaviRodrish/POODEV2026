@@ -27,12 +27,12 @@ export function AbaCatalogo({
     setMensagemFeedback('');
 
     if (isBloqueado) {
-      setMensagemFeedback({ tipo: 'erro', texto: `Locação Bloqueada: Sua conta possui pendências ativas (${usuarioLogado.motivo || 'regularize com a agência'}).` });
+      setMensagemFeedback({ tipo: 'erro', texto: `Conta bloqueada: ${usuarioLogado.motivo || 'procure a agência'}.` });
       return;
     }
 
     if (v.precisa_revisao || v.status === 'manutenção') {
-      setMensagemFeedback({ tipo: 'erro', texto: `Este veículo atingiu o limite de quilometragem para revisão preventiva e está temporariamente indisponível.` });
+      setMensagemFeedback({ tipo: 'erro', texto: 'Veículo em revisão preventiva (indisponível).' });
       return;
     }
 
@@ -80,7 +80,7 @@ export function AbaCatalogo({
     try {
       const res = await fetch("http://localhost:8000/api/reservas", { method: "POST", body: form });
       if (res.ok) {
-        setMensagemFeedback({ tipo: 'sucesso', texto: 'Pedido de reserva enviado com sucesso para a agência!' });
+        setMensagemFeedback({ tipo: 'sucesso', texto: 'Reserva solicitada com sucesso!' });
         carregarMinhasReservas();
         fecharModalReserva();
       } else {
@@ -94,27 +94,29 @@ export function AbaCatalogo({
     }
   };
 
+  const veiculosDisponiveis = veiculos.filter(v => v.status === 'disponível');
+
   return (
     <section className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Escolha o seu Veículo</h2>
-          <p className="text-xs text-slate-500">Selecione os dias pretendidos e personalize a sua locação</p>
+          <p className="text-xs text-slate-500">Selecione o período e personalize sua locação</p>
         </div>
         <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-xl text-xs font-bold">
-          Total na Frota: {veiculos.length}
+          Disponíveis: {veiculosDisponiveis.length}
         </span>
       </div>
 
       {carregando ? (
-        <div className="py-12 text-center text-slate-400 text-sm">A carregar catálogo...</div>
-      ) : veiculos.length === 0 ? (
+        <div className="py-12 text-center text-slate-400 text-sm">Carregando catálogo...</div>
+      ) : veiculosDisponiveis.length === 0 ? (
         <div className="py-12 text-center text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-2xl bg-white">
           Nenhum veículo disponível no momento.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {veiculos.map(v => {
+          {veiculosDisponiveis.map(v => {
             const combustivelPct = Math.round((v.combustivel_nivel ?? 1.0) * 100);
             const emRevisao = v.precisa_revisao || v.status === 'manutenção';
             const alugado = v.status === 'alugado';
@@ -124,13 +126,23 @@ export function AbaCatalogo({
             const bloqueadoParaAluguel = isBloqueado || emRevisao || (alugado && !minhaReservaDoVeiculo) || statusReserva;
 
             return (
-              <div key={v.id} className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition">
-                <div className="space-y-3">
+              <div key={v.id} className="bg-white border border-slate-200 rounded-2xl p-6 md:p-7 min-h-[460px] flex flex-col justify-between shadow-sm hover:shadow-md transition">
+                <div className="space-y-4">
+                  {/* Identificação Visível da Agência & Badge de Revisão */}
+                  <div className="flex justify-between items-center">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                      <span>🏢</span>
+                      <span>{v.agencia_nome || (v.agencia_id ? `Agência ${v.agencia_id}` : 'Agência 1')}</span>
+                    </span>
+                    {emRevisao && (
+                      <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-100 text-amber-800">
+                        Revisão
+                      </span>
+                    )}
+                  </div>
+
                   <div className="flex justify-between items-start">
                     <h3 className="font-bold text-base text-slate-900">{v.marca} {v.modelo}</h3>
-                    {emRevisao && (
-                      <span className="px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-800">Revisão</span>
-                    )}
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-slate-600">
@@ -148,6 +160,15 @@ export function AbaCatalogo({
                     <span className="font-medium text-emerald-700">⛽ Tanque: {combustivelPct}%</span>
                     <span>•</span>
                     <span>Odômetro: {v.quilometragem || 0} km</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs bg-emerald-50/70 text-emerald-800 px-3 py-2 rounded-xl border border-emerald-200">
+                    <span className="font-medium">
+                      ⚙️ Motor {v.cilindrada > 0 ? Number(v.cilindrada).toFixed(1) : 'EV'} • {v.combustivel_tipo || 'Gasolina'}
+                    </span>
+                    <span className="font-bold">
+                      🌱 {v.emissao_100km ?? 18} kg CO₂ / 100km
+                    </span>
                   </div>
                 </div>
 
@@ -187,7 +208,7 @@ export function AbaCatalogo({
             
             <div className="flex justify-between items-start border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Configurar Solicitação de Locação</h3>
+                <h3 className="text-base font-bold text-slate-900">Solicitar Locação</h3>
                 <p className="text-xs text-slate-500">{veiculoModal.marca} {veiculoModal.modelo} • Diária: R$ {veiculoModal.valor_diaria}</p>
               </div>
               <button 
@@ -200,6 +221,21 @@ export function AbaCatalogo({
             </div>
 
             <form onSubmit={handleConfirmarReserva} className="space-y-4 text-xs">
+              
+              {/* BLOCO DESTACADO: LOCAL DE RETIRADA */}
+              <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-blue-900 uppercase text-[11px] tracking-wide flex items-center gap-1.5">
+                    <span className="text-rose-500 text-sm">📍</span> Local de Retirada do Veículo
+                  </span>
+                  <span className="text-[11px] font-semibold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
+                    🏢 {veiculoModal.agencia_nome || (veiculoModal.agencia_id ? `Agência ${veiculoModal.agencia_id}` : 'Agência 1')}
+                  </span>
+                </div>
+                <p className="text-slate-700 font-medium text-xs pl-5">
+                  📍 Local de Retirada: {veiculoModal.agencia_endereco || 'Av. Alberto Lamego, 2000 • Parque Califórnia'}
+                </p>
+              </div>
               
               {/* 1. Quantidade de Dias */}
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
@@ -329,7 +365,7 @@ export function AbaCatalogo({
                   disabled={enviandoReserva}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition shadow-sm disabled:opacity-50"
                 >
-                  {enviandoReserva ? 'A enviar...' : 'Confirmar Reserva 📋'}
+                  {enviandoReserva ? 'Enviando...' : 'Confirmar Reserva 📋'}
                 </button>
               </div>
 
