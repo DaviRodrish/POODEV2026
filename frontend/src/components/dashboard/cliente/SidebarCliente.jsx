@@ -58,7 +58,7 @@ export function SidebarCliente({ abaAtiva, setAbaAtiva, minhasReservas, usuarioL
           onClick={handleSair}
           className="w-full bg-slate-800 hover:bg-rose-600/20 hover:border-rose-500 hover:text-rose-400 border border-slate-700 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
         >
-          🚪 Terminar Sessão
+          🚪 Sair
         </button>
       </div>
     </aside>

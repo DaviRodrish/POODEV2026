@@ -31,7 +31,7 @@ export function Home() {
           Encontre o veículo ideal para a sua jornada
         </h1>
         <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-          Consulte a frota disponível diretamente das agências parceiras, faça reservas de forma rápida e segura.
+          Consulte veículos disponíveis e reserve com rapidez e segurança.
         </p>
         
         <div className="flex justify-center gap-4">

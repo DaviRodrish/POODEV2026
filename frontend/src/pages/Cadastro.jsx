@@ -36,7 +36,7 @@ export function Cadastro() {
 
     if (!formData.nome || !formData.cnh) {
       setStatusOcr({
-        texto: "Preencha o Nome e o número da CNH antes de enviar a imagem.",
+        texto: "Informe Nome e CNH antes de enviar a foto.",
         tipo: "error"
       });
       e.target.value = "";
@@ -67,7 +67,7 @@ export function Cadastro() {
       } else {
         setCnhValidadaPorOCR(false);
         setStatusOcr({
-          texto: "⚠️ Atenção: Não conseguimos validar o Nome/CNH no documento. Verifique a imagem.",
+          texto: "⚠️ Nome ou CNH não conferem com o documento.",
           tipo: "error"
         });
       }
@@ -161,7 +161,7 @@ export function Cadastro() {
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Criar Nova Conta</h2>
-          <p className="text-sm text-gray-500 mt-1">Preencha os campos abaixo para se cadastrar</p>
+          <p className="text-sm text-gray-500 mt-1">Crie sua conta para começar</p>
         </div>
 
         {erro && (

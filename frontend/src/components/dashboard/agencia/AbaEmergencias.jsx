@@ -7,7 +7,7 @@ export function AbaEmergencias({ emergencias, carregando, atualizarStatusEmergen
     <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Monitorização de Ocorrências</h2>
+          <h2 className="text-lg font-bold text-slate-900">Monitoramento de Ocorrências</h2>
           <p className="text-xs text-slate-500">Alertas SOS enviados pelos clientes em circulação</p>
         </div>
         {totalAlertasAbertos > 0 && (
@@ -18,10 +18,10 @@ export function AbaEmergencias({ emergencias, carregando, atualizarStatusEmergen
       </div>
       
       {carregando ? (
-        <div className="py-12 text-center text-slate-400 text-sm">A carregar alertas...</div>
+        <div className="py-12 text-center text-slate-400 text-sm">Carregando alertas...</div>
       ) : !emergencias || emergencias.length === 0 ? (
         <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 p-5 rounded-xl text-sm font-medium flex items-center gap-3">
-          <span className="text-xl">✅</span> Nenhum alerta de emergência registado no momento. Frota segura!
+          <span className="text-xl">✅</span> Nenhum alerta de emergência registrado no momento. Frota segura!
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

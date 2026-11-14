@@ -19,7 +19,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
       if (res.ok) {
         setMensagemFeedback({
           tipo: 'sucesso',
-          texto: 'Atendimento confirmado com sucesso! Ocorrência encerrada.'
+          texto: 'Atendimento confirmado. Ocorrência encerrada.'
         });
         carregarMinhasEmergencias();
       } else {
@@ -49,7 +49,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
     const locacaoAtiva = minhasReservas.find(r => r.status === 'APROVADA' || r.status === 'RETIRADO');
     
     if (!locacaoAtiva) {
-      setMensagemFeedback({ tipo: 'erro', texto: 'Não possui nenhuma locação Aprovada/Ativa para disparar o SOS.' });
+      setMensagemFeedback({ tipo: 'erro', texto: 'Nenhuma locação ativa para acionar o SOS.' });
       return;
     }
 
@@ -67,7 +67,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
       })
       .then(async (res) => {
         if (res.ok) {
-          setMensagemFeedback({ tipo: 'sucesso', texto: 'Alerta SOS acionado com sucesso com a sua localização GPS atual! O seguro foi notificado.' });
+          setMensagemFeedback({ tipo: 'sucesso', texto: 'SOS acionado! Localização enviada ao seguro.' });
           setDescricaoEmergencia('');
           carregarMinhasEmergencias();
         } else {
@@ -79,7 +79,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
     };
 
     if (navigator.geolocation) {
-      setMensagemFeedback({ tipo: 'sucesso', texto: 'A obter localização GPS atual...' });
+      setMensagemFeedback({ tipo: 'sucesso', texto: 'Obtendo localização GPS...' });
       navigator.geolocation.getCurrentPosition(
         (position) => {
           executarEnvio(position.coords.latitude.toString(), position.coords.longitude.toString());
@@ -123,7 +123,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
           <h2 className="text-lg font-bold text-rose-600">
             Solicitar Emergência
           </h2>
-          <p className="text-xs text-slate-500">A localização GPS atual será recolhida e enviada automaticamente à agência</p>
+          <p className="text-xs text-slate-500">Sua localização GPS será enviada automaticamente à agência.</p>
         </div>
 
         <form onSubmit={enviarSos} className="space-y-4">
