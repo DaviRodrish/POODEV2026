@@ -10,9 +10,9 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   const [frota, setFrota] = useState([]);
   const [emergencias, setEmergencias] = useState([]);
   const [reservasPendentes, setReservasPendentes] = useState([]);
+  const [manutencoes, setManutencoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
-  // Estados FIPE e Cadastro
   const [marcas, setMarcas] = useState([]);
   const [modelos, setModelos] = useState([]);
   const [anos, setAnos] = useState([]);
@@ -23,7 +23,6 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   const [valorDiaria, setValorDiaria] = useState('');
   const [mensagemFeedback, setMensagemFeedback] = useState('');
 
-  // Estados Modal Vistoria
   const [modalVistoriaAberto, setModalVistoriaAberto] = useState(false);
   const [veiculoVistoria, setVeiculoVistoria] = useState(null);
   const [novoKmInput, setNovoKmInput] = useState('');
@@ -49,6 +48,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
       carregarFrota(),
       carregarEmergencias(),
       carregarReservasPendentes(),
+      carregarManutencoes(),
       carregarMarcasFipe()
     ]);
     setCarregando(false);
@@ -86,6 +86,45 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     }
   };
 
+  const carregarManutencoes = async () => {
+    if (!agenciaLogada?.id) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/agencias/${agenciaLogada.id}/manutencoes`);
+      if (res.ok) setManutencoes(await res.json());
+    } catch (err) {
+      console.error("Erro ao carregar manutenções:", err);
+    }
+  };
+
+  const gerenciarManutencao = async (veiculoId, acao, descricao, origem = 'REVISAO_KM') => {
+    setMensagemFeedback('');
+    const formData = new FormData();
+    formData.append('acao', acao);
+    formData.append('descricao', descricao);
+    formData.append('origem', origem);
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/veiculos/${veiculoId}/manutencao`, {
+        method: 'PUT',
+        body: formData
+      });
+      const dados = await res.json();
+
+      if (res.ok) {
+        setMensagemFeedback({ tipo: 'sucesso', texto: dados.mensagem });
+        carregarFrota();
+        carregarManutencoes();
+        return true;
+      } else {
+        setMensagemFeedback({ tipo: 'erro', texto: dados.detail || 'Erro ao registrar manutenção.' });
+        return false;
+      }
+    } catch (err) {
+      setMensagemFeedback({ tipo: 'erro', texto: 'Erro de conexão com o servidor.' });
+      return false;
+    }
+  };
+
   const responderReserva = async (reservaId, aprovar) => {
     const formData = new FormData();
     formData.append('aprovar', aprovar);
@@ -118,7 +157,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     setErroVistoriaModal('');
   };
 
-  const handleSalvarVistoria = async (e) => {
+  const handleSalvarVistoria = async (e, fotoOdometro = null, onSucessoExtra = null) => {
     e.preventDefault();
     setErroVistoriaModal('');
     const kmAtual = veiculoVistoria?.quilometragem || 0;
@@ -140,6 +179,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
       const formData = new FormData();
       formData.append('quilometragem', kmInformado);
       formData.append('combustivel_nivel', combustivelInformado);
+      if (fotoOdometro) formData.append('foto_odometro', fotoOdometro);
 
       const res = await fetch(`http://localhost:8000/api/veiculos/${veiculoVistoria.id}/vistoria`, {
         method: 'PUT',
@@ -148,7 +188,9 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
 
       if (res.ok) {
         fecharModalVistoria();
+        if (onSucessoExtra) onSucessoExtra();
         carregarFrota();
+        carregarManutencoes();
         setMensagemFeedback({ 
           tipo: 'sucesso', 
           texto: `Vistoria de (${veiculoVistoria.placa}) concluída: ${kmInformado} km e ${Math.round(combustivelInformado * 100)}% de combustível.` 
@@ -266,7 +308,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   return {
     agenciaLogada, onLogout,
     abaAtiva, setAbaAtiva,
-    frota, emergencias, reservasPendentes, carregando,
+    frota, emergencias, reservasPendentes, manutencoes, carregando,
     marcas, modelos, anos,
     placa, setPlaca, marcaCodigo, modeloCodigo, anoCodigo, setAnoCodigo,
     valorDiaria, setValorDiaria, mensagemFeedback,
@@ -274,6 +316,6 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     novoCombustivelInput, setNovoCombustivelInput, erroVistoriaModal, salvandoVistoria,
     selecionarMarca, selecionarModelo, cadastrarVeiculo,
     responderReserva, abrirModalVistoria, fecharModalVistoria, handleSalvarVistoria,
-    atualizarStatusEmergencia
+    atualizarStatusEmergencia, gerenciarManutencao
   };
 }

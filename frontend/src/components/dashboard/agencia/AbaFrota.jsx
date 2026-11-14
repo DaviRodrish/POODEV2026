@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createWorker } from 'tesseract.js';
 
 export function AbaFrota({
   frota, marcas, modelos, anos,
@@ -9,12 +10,69 @@ export function AbaFrota({
   novoKmInput, setNovoKmInput, novoCombustivelInput, setNovoCombustivelInput,
   erroVistoriaModal, salvandoVistoria, handleSalvarVistoria
 }) {
+  const [fotoOdometro, setFotoOdometro] = useState(null);
+  const [loadingOcr, setLoadingOcr] = useState(false);
+  const [statusOcr, setStatusOcr] = useState({ texto: '', tipo: '' });
+
+  const fecharModalComLimpeza = () => {
+    setFotoOdometro(null);
+    setStatusOcr({ texto: '', tipo: '' });
+    setLoadingOcr(false);
+    fecharModalVistoria();
+  };
+
+  const handleFotoPainelChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setFotoOdometro(file);
+    setLoadingOcr(true);
+    setStatusOcr({ texto: 'Lendo odômetro via OCR...', tipo: 'info' });
+
+    try {
+      const worker = await createWorker('por');
+      const ret = await worker.recognize(file);
+      await worker.terminate();
+
+      const textoDetectado = ret.data.text.replace(/\s+/g, '');
+      const numeros = textoDetectado.match(/\d{4,6}/g);
+
+      if (numeros && numeros.length > 0) {
+        const kmSugerido = parseInt(numeros[0], 10);
+        const kmAtual = veiculoVistoria?.quilometragem || 0;
+
+        if (kmSugerido >= kmAtual) {
+          setNovoKmInput(kmSugerido);
+          setStatusOcr({
+            texto: `✓ Odômetro detectado: ${kmSugerido.toLocaleString('pt-BR')} km.`,
+            tipo: 'success'
+          });
+        } else {
+          setStatusOcr({
+            texto: `⚠️ Odômetro menor que o atual (${kmAtual} km). Ajuste se necessário.`,
+            tipo: 'warning'
+          });
+        }
+      } else {
+        setStatusOcr({
+          texto: 'Dígitos não identificados. Digite manualmente.',
+          tipo: 'warning'
+        });
+      }
+    } catch (err) {
+      console.error('Erro no Tesseract OCR:', err);
+      setStatusOcr({ texto: 'Falha no leitor de imagem. Digite o valor manualmente.', tipo: 'error' });
+    } finally {
+      setLoadingOcr(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
         <div className="mb-6">
           <h2 className="text-lg font-bold text-slate-900">Adicionar Novo Veículo à Frota</h2>
-          <p className="text-xs text-slate-500">Registo integrado diretamente com a Tabela FIPE</p>
+          <p className="text-xs text-slate-500">Cadastro integrado à Tabela FIPE</p>
         </div>
 
         <form onSubmit={cadastrarVeiculo} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -61,14 +119,14 @@ export function AbaFrota({
       <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Frota Registada</h2>
+            <h2 className="text-lg font-bold text-slate-900">Frota Cadastrada</h2>
             <p className="text-xs text-slate-500">Veículos ativos sob gestão desta agência</p>
           </div>
           <span className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-xl text-xs font-bold">Total: {frota.length}</span>
         </div>
 
         {frota.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">Ainda não existem veículos registados nesta agência.</div>
+          <div className="py-12 text-center text-slate-400 text-sm border-2 border-dashed border-slate-100 rounded-xl">Nenhum veículo cadastrado nesta agência.</div>
         ) : (
           <div className="overflow-x-auto border border-slate-200 rounded-xl">
             <table className="w-full text-left border-collapse">
@@ -118,7 +176,6 @@ export function AbaFrota({
         )}
       </section>
 
-      {/* MINI-MODAL NATIVO UNIFICADO: VISTORIA E DADOS */}
       {modalVistoriaAberto && veiculoVistoria && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in duration-200">
@@ -129,7 +186,7 @@ export function AbaFrota({
                   {veiculoVistoria.marca} {veiculoVistoria.modelo} • <span className="font-mono font-semibold">{veiculoVistoria.placa}</span>
                 </p>
               </div>
-              <button type="button" onClick={fecharModalVistoria} className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 rounded-lg hover:bg-slate-100 transition">✕</button>
+              <button type="button" onClick={fecharModalComLimpeza} className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 rounded-lg hover:bg-slate-100 transition">✕</button>
             </div>
 
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1">
@@ -147,9 +204,35 @@ export function AbaFrota({
               <div className="p-3 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">{erroVistoriaModal}</div>
             )}
 
-            <form onSubmit={handleSalvarVistoria} className="space-y-4">
+            <form
+              onSubmit={(e) => handleSalvarVistoria(e, fotoOdometro, () => { setFotoOdometro(null); setStatusOcr({ texto: '', tipo: '' }); })}
+              className="space-y-4"
+            >
+              <div className="p-3 bg-slate-50 border border-dashed border-slate-300 rounded-xl space-y-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase flex items-center justify-between">
+                  <span>📷 Foto do Painel (Odômetro)</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Tesseract OCR</span>
+                </label>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg"
+                  onChange={handleFotoPainelChange}
+                  disabled={loadingOcr || salvandoVistoria}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                />
+                {statusOcr.texto && (
+                  <p className={`text-[11px] font-semibold ${
+                    statusOcr.tipo === 'success' ? 'text-emerald-700' :
+                    statusOcr.tipo === 'warning' ? 'text-amber-700' :
+                    statusOcr.tipo === 'error' ? 'text-rose-700' : 'text-blue-700'
+                  }`}>
+                    {statusOcr.texto}
+                  </p>
+                )}
+              </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Novo Odômetro (km)</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Novo Odômetro Confirmado (km)</label>
                 <input
                   type="number"
                   min={veiculoVistoria.quilometragem || 0}
@@ -199,9 +282,9 @@ export function AbaFrota({
               </div>
 
               <div className="flex gap-3 pt-3">
-                <button type="button" onClick={fecharModalVistoria} disabled={salvandoVistoria} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl transition">Cancelar</button>
-                <button type="submit" disabled={salvandoVistoria} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-sm disabled:opacity-50">
-                  {salvandoVistoria ? 'Salvando...' : 'Salvar Vistoria'}
+                <button type="button" onClick={fecharModalComLimpeza} disabled={salvandoVistoria} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl transition">Cancelar</button>
+                <button type="submit" disabled={salvandoVistoria || loadingOcr} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-sm disabled:opacity-50">
+                  {salvandoVistoria ? 'Salvando...' : loadingOcr ? 'Lendo Painel...' : 'Salvar Vistoria'}
                 </button>
               </div>
             </form>

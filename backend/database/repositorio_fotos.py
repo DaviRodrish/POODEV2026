@@ -22,7 +22,6 @@ except Exception as e:
 
 
 def salvar_foto_binaria(cliente_id, veiculo_id, nome_arquivo, content_type, dados_binarios):
-    """Salva a foto binária diretamente no MongoDB Atlas."""
     if colecao_fotos is None:
         raise Exception("A coleção do MongoDB não está disponível devido a um erro de conexão.")
 
@@ -39,7 +38,6 @@ def salvar_foto_binaria(cliente_id, veiculo_id, nome_arquivo, content_type, dado
 
 
 def salvar_cnh_motorista_binaria(cliente_id, nome_arquivo, content_type, dados_binarios):
-    """Salva o documento/foto da CNH em formato binário diretamente no MongoDB Atlas."""
     if colecao_fotos is None:
         raise Exception("A coleção do MongoDB não está disponível devido a um erro de conexão.")
 
@@ -53,3 +51,21 @@ def salvar_cnh_motorista_binaria(cliente_id, nome_arquivo, content_type, dados_b
     }
     resultado = colecao_fotos.insert_one(documento_cnh)
     return resultado.inserted_id
+
+
+def salvar_foto_odometro_binaria(veiculo_id, nome_arquivo, content_type, dados_binarios, quilometragem=None, cliente_id=None):
+    if colecao_fotos is None:
+        raise Exception("A coleção do MongoDB não está disponível devido a um erro de conexão.")
+
+    documento_odometro = {
+        "veiculo_id": int(veiculo_id),
+        "tipo_documento": "ODOMETRO_VISTORIA",
+        "quilometragem_registrada": int(quilometragem) if quilometragem is not None else None,
+        "cliente_id": int(cliente_id) if cliente_id is not None else None,
+        "nome_arquivo": nome_arquivo,
+        "content_type": content_type,
+        "dados_binarios": dados_binarios, # O PyMongo converte bytes para BinData nativamente
+        "enviado_em": datetime.utcnow(),
+    }
+    resultado = colecao_fotos.insert_one(documento_odometro)
+    return str(resultado.inserted_id)
