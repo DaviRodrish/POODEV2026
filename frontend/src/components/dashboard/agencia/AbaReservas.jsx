@@ -5,7 +5,7 @@ export function AbaReservas({ reservasPendentes, responderReserva }) {
     <section className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6">
       <div className="mb-6">
         <h2 className="text-lg font-bold text-slate-900">Aprovação de Reservas</h2>
-        <p className="text-xs text-slate-500">Analise os dados cadastrais, CNH e aptidão do cliente antes de autorizar</p>
+        <p className="text-xs text-slate-500">Revise os dados e a CNH do cliente antes de aprovar</p>
       </div>
 
       {reservasPendentes.length === 0 ? (
