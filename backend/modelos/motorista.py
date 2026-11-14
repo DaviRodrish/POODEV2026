@@ -65,5 +65,4 @@ class Motorista(Usuario):
             "apto_conduzir": self.pode_operar()
         }
 
-# Alias conforme Figura 5.2 do relatório oficial da UENF
 MotoristaSecundario = Motorista

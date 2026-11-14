@@ -4,11 +4,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-# Importar todos os routers modulares
-from backend.routers import emergencias, fipe, veiculos, auth
+from backend.routers import emergencias, fipe, veiculos, reservas, auth, clientes, manutencao, financeiro
 
 load_dotenv()
-        
+
 app = FastAPI(title="API Sistema de Aluguel de Carros")
 
 app.add_middleware(
@@ -19,12 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# --- REGISTO DOS ROUTERS MODULARES ---
 app.include_router(emergencias.router)
 app.include_router(fipe.router)
 app.include_router(veiculos.router)
+app.include_router(reservas.router)
 app.include_router(auth.router)
+app.include_router(clientes.router)
+app.include_router(manutencao.router)
+app.include_router(financeiro.router)
 
 @app.get("/")
 def raiz():

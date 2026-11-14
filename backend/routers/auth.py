@@ -50,7 +50,9 @@ async def login_usuario(
                 "usuario": {
                     "id": agencia.id,
                     "nome": agencia.nome,
-                    "email": agencia.email
+                    "email": agencia.email,
+                    "cnpj": agencia.cnpj,
+                    "chave_pix": agencia.chave_pix or agencia.cnpj
                 }
             }
 
@@ -86,7 +88,7 @@ async def cadastrar_usuario(
         ).first()
 
         if cliente_existente:
-            raise HTTPException(status_code=400, detail="E-mail ou CPF já registados.")
+            raise HTTPException(status_code=400, detail="E-mail ou CPF já cadastrados.")
 
         novo_cliente = ClienteModel(
             nome=nome, email=email, cpf=cpf, cnh=cnh or "Não informada",
@@ -97,11 +99,9 @@ async def cadastrar_usuario(
         db.commit()
         db.refresh(novo_cliente)
 
-        # Se enviou foto da CNH, lemos os bytes e guardamos no MongoDB Atlas diretamente
         if fotoCnh and fotoCnh.filename:
             dados_bytes = await fotoCnh.read()
             
-            # Validação para respeitar o limite de 16MB do MongoDB por documento
             if len(dados_bytes) > 10 * 1024 * 1024:
                 raise HTTPException(status_code=400, detail="A imagem da CNH excede o tamanho máximo permitido (10MB).")
 
@@ -112,7 +112,7 @@ async def cadastrar_usuario(
                 dados_binarios=dados_bytes
             )
 
-        return {"success": True, "message": "Utilizador cadastrado com sucesso com persistência poliglota!"}
+        return {"success": True, "message": "Usuário cadastrado com sucesso!"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -137,7 +137,7 @@ async def cadastrar_agencia(
         ).first()
 
         if agencia_existente:
-            raise HTTPException(status_code=400, detail="E-mail ou CNPJ já registadosdados.")
+            raise HTTPException(status_code=400, detail="E-mail ou CNPJ já cadastrados.")
 
         nova_agencia = AgenciaModel(
             nome=nome, email=email, cnpj=cnpj, senha=senha, endereco=endereco
@@ -152,7 +152,6 @@ async def cadastrar_agencia(
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-# Rota para recuperar a CNH do MongoDB e exibi-la na tela (Frontend)
 @router.get("/documentos/cnh/{cliente_id}")
 def obter_cnh_cliente(cliente_id: int):
     if colecao_fotos is None:

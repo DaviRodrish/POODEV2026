@@ -1,93 +1,26 @@
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, Response
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
 
 from backend.database.conexao_postgres import obter_conexao
-from backend.modelos.locacao import Locacao, LocacaoModel, ErroLocacao
+from backend.database.repositorio_fotos import salvar_foto_odometro_binaria, colecao_fotos
 from backend.modelos.veiculo import VeiculoModel
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
-from backend.modelos.cliente import ClienteModel
-from backend.modelos.enums import StatusLocacao
+from backend.modelos.agencia import AgenciaModel
 
-router = APIRouter(prefix="/api", tags=["Reservas"])
-
-@router.post("/reservas")
-async def solicitar_reserva(
-    cliente_id: int = Form(...),
-    veiculo_id: int = Form(...),
-    dias: int = Form(...),
-    motorista_secundario: str = Form("false"),
-    motorista_nome: str = Form(None),
-    motorista_cnh: str = Form(None),
-    outra_agencia: str = Form("false"),
-    agencia_destino: str = Form(None),
-    valor_total: float = Form(...), # Recebe o valor total calculado com as taxas do front
-    ori: str = Form("Campos dos Goytacazes"),
-    dest: str = Form("Campos dos Goytacazes"),
-    db: Session = Depends(obter_conexao)
-):
-    try:
-        cliente_db = db.query(ClienteModel).filter(ClienteModel.id == cliente_id).first()
-        if not cliente_db:
-            raise HTTPException(status_code=404, detail="Cliente não encontrado.")
-
-        veiculo_db = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == veiculo_id).first()
-        if not veiculo_db:
-            raise HTTPException(status_code=404, detail="Veículo não encontrado.")
-
-        ini = date.today()
-        fim = ini + timedelta(days=int(dias))
-
-        nova_locacao = Locacao(
-            cli=cliente_db,
-            veic=veiculo_db,
-            ini=ini,
-            fim=fim,
-            diaria=veiculo_db.valor_diaria,
-            ori=ori,
-            dest=dest
-        )
-
-        # Salva o registro incluindo os novos campos opcionais e o valor total com taxas
-        registro_db = LocacaoModel(
-            cliente_id=cliente_db.id,
-            veiculo_id=veiculo_db.id,
-            agencia_id=veiculo_db.agencia_id,
-            dias_contratados=nova_locacao.qtd_dias,
-            valor_estimado=float(valor_total), # Usa o valor enviado pelo modal (com as taxas)
-            motorista_secundario=(motorista_secundario == "true"),
-            motorista_nome=motorista_nome,
-            motorista_cnh=motorista_cnh,
-            outra_agencia=(outra_agencia == "true"),
-            agencia_destino=agencia_destino,
-            status="PENDENTE",
-            ativa=True
-        )
-        db.add(registro_db)
-        db.commit()
-        
-        return {
-            "success": True,
-            "message": "Solicitação de reserva criada com sucesso!",
-            "qtd_dias": nova_locacao.qtd_dias,
-            "valor_total": float(valor_total),
-            "status": "PENDENTE"
-        }
-
-    except ErroLocacao as el:
-        raise HTTPException(status_code=400, detail=str(el))
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+router = APIRouter(prefix="/api", tags=["Veículos"])
 
 @router.get("/catalogo/veiculos")
 def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
     veiculos = db.query(VeiculoAgenciaModel).all()
+    agencias_map = {a.id: a for a in db.query(AgenciaModel).all()}
     resultado = []
     for v in veiculos:
+        ag = agencias_map.get(v.agencia_id)
         resultado.append({
             "id": v.id,
             "agencia_id": v.agencia_id,
+            "agencia_nome": ag.nome if ag and ag.nome else f"Agência {v.agencia_id or 1}",
+            "agencia_endereco": ag.endereco if ag and ag.endereco else "Endereço da agência não informado",
             "placa": v.placa,
             "marca": v.marca,
             "modelo": v.modelo,
@@ -100,62 +33,11 @@ def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
             "fipeP": v.fipeP,
             "fipeA": v.fipeA,
             "precisa_revisao": v.precisa_revisao(),
+            "cilindrada": v.cilindrada,
+            "combustivel_tipo": v.tipo_combustivel,
+            "emissao_100km": v.calcular_emissao(100),
         })
     return resultado
-
-
-@router.get("/agencias/{agencia_id}/reservas-pendentes")
-def listar_reservas_pendentes(agencia_id: int, db: Session = Depends(obter_conexao)):
-    pendentes = db.query(LocacaoModel).filter_by(agencia_id=agencia_id, status="PENDENTE").all()
-    lista = []
-    for loc in pendentes:
-        cli = db.query(ClienteModel).get(loc.cliente_id)
-        veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
-        lista.append({"id": loc.id, "dias": loc.dias_contratados, "valor_total": loc.valor_estimado, "cliente": cli, "veiculo": veic})
-    return lista
-
-
-@router.put("/reservas/{reserva_id}/responder")
-def responder_reserva(reserva_id: int, aprovar: str = Form(...), db: Session = Depends(obter_conexao)):
-    loc = db.query(LocacaoModel).get(reserva_id)
-    veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
-    if aprovar == "true":
-        loc.status = "APROVADA"
-        veic.status = "alugado"
-    else:
-        loc.status = "RECUSADA"
-        veic.status = "disponível"
-    db.commit()
-    return {"ok": True}
-
-
-@router.get("/clientes/{cliente_id}/reservas")
-def listar_reservas_cliente(cliente_id: int, db: Session = Depends(obter_conexao)):
-    reservas = db.query(LocacaoModel).filter_by(cliente_id=cliente_id).all()
-    return [
-        {
-            "id": r.id,
-            "status": r.status,
-            "veiculo_id": r.veiculo_id,
-            "dias": r.dias_contratados,
-            "valor_total": r.valor_estimado,
-            "motorista_secundario": getattr(r, "motorista_secundario", False),
-            "motorista_nome": getattr(r, "motorista_nome", None),
-            "motorista_cnh": getattr(r, "motorista_cnh", None),
-            "outra_agencia": getattr(r, "outra_agencia", False),
-            "agencia_destino": getattr(r, "agencia_destino", None)
-        }
-        for r in reservas
-    ]
-
-@router.put("/reservas/{reserva_id}/devolver")
-def devolver_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
-    loc = db.query(LocacaoModel).get(reserva_id)
-    veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
-    loc.status = "CONCLUIDA"
-    veic.status = "disponível"
-    db.commit()
-    return {"ok": True}
 
 
 @router.post("/agencias/{agencia_id}/veiculos")
@@ -211,42 +93,12 @@ async def cadastrar_veiculo_agencia(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/veiculos/{veiculo_id}/quilometragem")
-def atualizar_quilometragem_veiculo(
-    veiculo_id: int,
-    quilometragem: float = Form(...),
-    db: Session = Depends(obter_conexao)
-):
-    veiculo = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == veiculo_id).first()
-    if not veiculo:
-        raise HTTPException(status_code=404, detail="Veículo não encontrado")
-
-    km_atual = veiculo.quilometragem or 0
-    if quilometragem < km_atual:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Quilometragem inválida: {quilometragem} km não pode ser menor que o odômetro atual ({km_atual} km)"
-        )
-
-    veiculo.quilometragem = int(quilometragem)
-    db.commit()
-    db.refresh(veiculo)
-
-    tipo_veiculo = "NOVO" if veiculo.quilometragem <= 10000 else "USADO"
-    return {
-        "sucesso": True,
-        "mensagem": "Odômetro atualizado com sucesso",
-        "veiculo_id": veiculo.id,
-        "quilometragem": veiculo.quilometragem,
-        "tipo": tipo_veiculo
-    }
-
-
 @router.put("/veiculos/{veiculo_id}/vistoria")
-def atualizar_vistoria_veiculo(
+async def atualizar_vistoria_veiculo(
     veiculo_id: int,
     quilometragem: float = Form(...),
     combustivel_nivel: float = Form(...),
+    foto_odometro: UploadFile = File(None),
     db: Session = Depends(obter_conexao)
 ):
     veiculo = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == veiculo_id).first()
@@ -266,8 +118,26 @@ def atualizar_vistoria_veiculo(
             detail="Nível de combustível inválido: deve estar entre 0.0 (vazio) e 1.0 (tanque cheio)"
         )
 
+    foto_id = None
+    if foto_odometro and foto_odometro.filename:
+        dados_bytes = await foto_odometro.read()
+        if len(dados_bytes) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="A imagem do odômetro excede o limite máximo permitido (10MB).")
+        try:
+            foto_id = salvar_foto_odometro_binaria(
+                veiculo_id=veiculo.id,
+                nome_arquivo=foto_odometro.filename,
+                content_type=foto_odometro.content_type or "image/jpeg",
+                dados_binarios=dados_bytes,
+                quilometragem=int(quilometragem)
+            )
+        except Exception as e:
+            print(f"Aviso ao salvar foto no MongoDB Atlas: {e}")
+
     veiculo.quilometragem = int(quilometragem)
     veiculo.combustivel_nivel = round(float(combustivel_nivel), 2)
+    if veiculo.precisa_revisao():
+        veiculo.colocar_em_manutencao()
     db.commit()
     db.refresh(veiculo)
 
@@ -278,5 +148,24 @@ def atualizar_vistoria_veiculo(
         "veiculo_id": veiculo.id,
         "quilometragem": veiculo.quilometragem,
         "combustivel_nivel": veiculo.combustivel_nivel,
-        "tipo": tipo_veiculo
+        "tipo": tipo_veiculo,
+        "foto_odometro_id": foto_id
     }
+
+
+@router.get("/veiculos/{veiculo_id}/foto-odometro")
+def obter_foto_odometro_veiculo(veiculo_id: int):
+    if colecao_fotos is None:
+        raise HTTPException(status_code=500, detail="MongoDB Atlas não está conectado.")
+    
+    doc = colecao_fotos.find_one(
+        {"veiculo_id": int(veiculo_id), "tipo_documento": "ODOMETRO_VISTORIA"},
+        sort=[("enviado_em", -1)]
+    )
+    if not doc or "dados_binarios" not in doc:
+        raise HTTPException(status_code=404, detail="Nenhuma foto de odômetro encontrada para este veículo.")
+    
+    return Response(
+        content=doc["dados_binarios"],
+        media_type=doc.get("content_type", "image/jpeg")
+    )

@@ -13,12 +13,9 @@ class CNPJ:
     def _validar(self) -> bool:
         if len(self.numero) != 14:
             return False
-        # Validação básica de dígitos repetidos (ex: 00.000.000/0000-00)
         if self.numero == self.numero[0] * 14:
             return False
         
-        # Aqui podes aplicar o algoritmo matemático oficial de validação de CNPJ se desejado,
-        # ou manter a validação estrutural de tamanho e formato.
         return True
 
     def formatado(self) -> str:

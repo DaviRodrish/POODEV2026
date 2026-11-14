@@ -5,7 +5,6 @@ class ServicoFipe:
 
     @staticmethod
     def _requisicao_com_retry(url):
-        """Método auxiliar para executar requisições com tratamento de timeout e múltiplas tentativas."""
         for tentativa in range(3):
             try:
                 print(f"A contactar a URL (Tentativa {tentativa + 1}): {url}...")
@@ -20,18 +19,15 @@ class ServicoFipe:
 
     @classmethod
     def listar_marcas(cls):
-        """Retorna apenas as 10 marcas mais populares e utilizadas no Brasil."""
         url = f"{cls.BASE_URL}/marcas"
         dados = cls._requisicao_com_retry(url)
         
-        # Lista de palavras-chave das marcas mais comuns no Brasil
         marcas_desejadas = [
             "fiat", "chevrolet", "volkswagen", "toyota", 
             "hyundai", "jeep", "renault", "honda", "nissan", "byd"
         ]
         
         if dados:
-            # Filtra a resposta da FIPE mantendo apenas as marcas da nossa lista principal
             marcas_filtradas = [
                 m for m in dados 
                 if any(desejada in m.get("nome", "").lower() for desejada in marcas_desejadas)
@@ -39,7 +35,6 @@ class ServicoFipe:
             if marcas_filtradas:
                 return marcas_filtradas
         
-        # Fallback de segurança caso a API externa esteja instável
         return [
             {"codigo": "21", "nome": "Fiat"},
             {"codigo": "25", "nome": "Chevrolet"},
