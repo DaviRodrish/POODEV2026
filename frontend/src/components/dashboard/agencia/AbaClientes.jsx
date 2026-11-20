@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const CARD = 'bg-white rounded-3xl shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]';
+
 export function AbaClientes({ setMensagemFeedback }) {
   const [clientes, setClientes] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -78,43 +80,50 @@ export function AbaClientes({ setMensagemFeedback }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className={`${CARD} p-6 flex flex-col md:flex-row md:items-center justify-between gap-4`}>
         <div>
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>👥</span> Gestão & Histórico de Clientes
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h2 className="text-lg font-bold text-slate-900">Gestão & histórico de clientes</h2>
+          <p className="text-sm text-slate-500 mt-0.5">
             Visualize os clientes cadastrados, histórico de locações e controle de bloqueio preventivo
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="bg-slate-100 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap">
+          <span className="bg-[#e6f0fa] text-[#0066cc] px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap">
             Total: {clientesFiltrados.length}
           </span>
           <button
             onClick={carregarClientes}
-            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
+            className="px-4 py-1.5 text-xs font-semibold text-slate-600 bg-[#eef3f9] hover:bg-[#dcebf9] rounded-full transition"
             title="Atualizar lista"
           >
-            🔄
+            Atualizar
           </button>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-        <div className="relative">
-          <span className="absolute left-3.5 top-3 text-slate-400 text-sm">🔍</span>
-          <input
-            type="text"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar cliente por nome, e-mail ou CPF..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-          />
-        </div>
+      <div className="relative">
+        <svg
+          viewBox="0 0 24 24"
+          className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+        <input
+          type="text"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar cliente por nome, e-mail ou CPF..."
+          className="w-full pl-11 pr-5 py-3 bg-white rounded-full text-sm shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)] border border-transparent placeholder:text-slate-400 focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 focus:outline-none transition"
+        />
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className={`${CARD} overflow-hidden`}>
         {carregando ? (
           <div className="py-12 text-center text-slate-400 text-sm">Carregando clientes...</div>
         ) : clientesFiltrados.length === 0 ? (
@@ -125,7 +134,7 @@ export function AbaClientes({ setMensagemFeedback }) {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 font-bold uppercase tracking-wider">
+                <tr className="bg-[#f4f7fb] text-xs text-slate-500 font-semibold">
                   <th className="p-4">Nome</th>
                   <th className="p-4">E-mail</th>
                   <th className="p-4">CPF</th>
@@ -141,10 +150,10 @@ export function AbaClientes({ setMensagemFeedback }) {
                   const totalLocacoes = cli.total_locacoes ?? (Array.isArray(cli.locacoes) ? cli.locacoes.length : 0);
 
                   return (
-                    <tr key={cli.id} className="hover:bg-slate-50/70 transition">
+                    <tr key={cli.id} className="hover:bg-[#f8fafd] transition">
                       <td className="p-4 font-bold text-slate-900">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#e6f0fa] text-[#0066cc] flex items-center justify-center font-bold text-xs">
                             {cli.nome ? cli.nome.charAt(0).toUpperCase() : 'C'}
                           </div>
                           <span>{cli.nome}</span>
@@ -154,15 +163,15 @@ export function AbaClientes({ setMensagemFeedback }) {
                       <td className="p-4 font-mono text-slate-600">{formatarCpf(cli.cpf)}</td>
                       <td className="p-4 font-mono text-slate-600">{cli.cnh || 'Não informada'}</td>
                       <td className="p-4">
-                        <span className="px-2 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-700">
+                        <span className="px-3 py-1 rounded-full font-semibold bg-[#eef3f9] text-slate-700">
                           {totalLocacoes} locação(ões)
                         </span>
                       </td>
                       <td className="p-4">
                         {bloqueado ? (
                           <div className="space-y-0.5">
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-block">
-                              BLOQUEADO
+                            <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-700 inline-block">
+                              Bloqueado
                             </span>
                             {cli.motivo && (
                               <p className="text-[10px] text-rose-600 truncate max-w-[160px]" title={cli.motivo}>
@@ -171,8 +180,8 @@ export function AbaClientes({ setMensagemFeedback }) {
                             )}
                           </div>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
-                            ATIVO
+                          <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 inline-block">
+                            Ativo
                           </span>
                         )}
                       </td>
@@ -181,9 +190,9 @@ export function AbaClientes({ setMensagemFeedback }) {
                           <button
                             onClick={() => handleAlterarStatus(cli.id, 'ATIVO', '')}
                             disabled={enviando}
-                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold transition shadow-sm"
+                            className="px-4 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold transition disabled:opacity-50"
                           >
-                            ✓ Desbloquear
+                            Desbloquear
                           </button>
                         ) : (
                           <button
@@ -192,9 +201,9 @@ export function AbaClientes({ setMensagemFeedback }) {
                               setMotivoBloqueio('');
                             }}
                             disabled={enviando}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-xs font-bold transition shadow-sm"
+                            className="px-4 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-full text-xs font-semibold transition disabled:opacity-50"
                           >
-                            🚫 Bloquear
+                            Bloquear
                           </button>
                         )}
                       </td>
@@ -208,17 +217,18 @@ export function AbaClientes({ setMensagemFeedback }) {
       </div>
 
       {clienteParaBloquear && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Bloquear Locações do Cliente</h3>
+                <h3 className="text-base font-bold text-slate-900">Bloquear locações do cliente</h3>
                 <p className="text-xs text-slate-500 mt-0.5">{clienteParaBloquear.nome}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setClienteParaBloquear(null)}
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 rounded-lg hover:bg-slate-100 transition"
+                aria-label="Fechar"
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold h-8 w-8 rounded-full hover:bg-slate-100 transition"
               >
                 ✕
               </button>
@@ -231,35 +241,33 @@ export function AbaClientes({ setMensagemFeedback }) {
               }}
               className="space-y-4"
             >
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Motivo do Bloqueio
-                </label>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-600">Motivo do bloqueio</label>
                 <input
                   type="text"
                   required
                   value={motivoBloqueio}
                   onChange={(e) => setMotivoBloqueio(e.target.value)}
                   placeholder="Ex: Pendência financeira, infração contratual..."
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  className="w-full bg-[#f4f7fb] border border-transparent rounded-xl px-4 py-2.5 text-sm placeholder:text-slate-400 focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none transition"
                 />
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setClienteParaBloquear(null)}
                   disabled={enviando}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition"
+                  className="flex-1 bg-[#eef3f9] hover:bg-[#dcebf9] text-slate-700 font-semibold py-2.5 rounded-full text-sm transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={enviando}
-                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-sm disabled:opacity-50"
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 rounded-full text-sm transition disabled:opacity-50"
                 >
-                  {enviando ? 'Bloqueando...' : 'Confirmar Bloqueio'}
+                  {enviando ? 'Bloqueando...' : 'Confirmar bloqueio'}
                 </button>
               </div>
             </form>

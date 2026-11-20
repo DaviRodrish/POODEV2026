@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const CARD = 'bg-white rounded-3xl p-6 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]';
+
 export function AbaFinanceiro({ agenciaLogada, setMensagemFeedback }) {
   const chavePadrao = agenciaLogada?.chave_pix || agenciaLogada?.cnpj || '';
   const [chavePixInput, setChavePixInput] = useState(chavePadrao);
@@ -115,23 +117,43 @@ export function AbaFinanceiro({ agenciaLogada, setMensagemFeedback }) {
   ).length;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* 1. CARD CONFIGURAÇÃO DA CHAVE PIX */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+    <div className="space-y-6">
+      {/* 1. Resumo: o faturamento é o destaque (azul sólido), os demais ficam discretos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-[#0066cc] text-white p-6 rounded-3xl shadow-[0_16px_36px_-18px_rgba(0,102,204,0.7)]">
+          <span className="text-xs font-semibold text-white/80">Faturamento total</span>
+          <p className="text-3xl font-black mt-1.5 tracking-tight">R$ {faturamentoTotal.toFixed(2)}</p>
+          <span className="text-xs text-white/75">Total recebido via PIX</span>
+        </div>
+        <div className="bg-white p-6 rounded-3xl shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]">
+          <span className="text-xs font-semibold text-slate-500">Contratos quitados</span>
+          <p className="text-2xl font-black text-slate-900 mt-1.5">{totalQuitadas} locações</p>
+          <span className="text-xs text-slate-400">Locações ativas ou concluídas</span>
+        </div>
+        <div className="bg-white p-6 rounded-3xl shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]">
+          <span className="text-xs font-semibold text-slate-500">Pagamento pendente</span>
+          <p className="text-2xl font-black text-amber-600 mt-1.5">{totalPagamentoPendente} locações</p>
+          <span className="text-xs text-slate-400">Reserva aprovada, aguardando PIX</span>
+        </div>
+        <div className="bg-white p-6 rounded-3xl shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]">
+          <span className="text-xs font-semibold text-slate-500">Aguardando confirmação</span>
+          <p className="text-2xl font-black text-orange-600 mt-1.5">{totalAguardandoConfirmacao} locações</p>
+          <span className="text-xs text-slate-400">PIX declarado pelo cliente</span>
+        </div>
+      </div>
+
+      {/* 2. Chave PIX */}
+      <div className={`${CARD} space-y-4`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <span>💵</span> Chave PIX Oficial da Filial
-            </h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-base font-bold text-slate-900">Chave PIX oficial da filial</h2>
+            <p className="text-sm text-slate-500">
               Chave exibida aos clientes no pagamento das locações desta agência.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 font-mono">
-              Chave Ativa: {chaveAtiva || 'Não configurada'}
-            </span>
-          </div>
+          <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 font-mono self-start">
+            Chave ativa: {chaveAtiva || 'Não configurada'}
+          </span>
         </div>
 
         <form onSubmit={handleSalvarChavePix} className="flex flex-col md:flex-row gap-3 items-center">
@@ -141,79 +163,55 @@ export function AbaFinanceiro({ agenciaLogada, setMensagemFeedback }) {
             value={chavePixInput}
             onChange={(e) => setChavePixInput(e.target.value)}
             placeholder="Digite CNPJ, E-mail, Celular ou Chave Aleatória"
-            className="flex-1 w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+            className="flex-1 w-full bg-[#f4f7fb] border border-transparent rounded-full px-5 py-2.5 text-sm font-mono placeholder:text-slate-400 focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 focus:outline-none transition"
           />
           <button
             type="button"
             onClick={() => setChavePixInput(agenciaLogada?.cnpj || '12.345.678/0001-90')}
-            className="w-full md:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition"
+            className="w-full md:w-auto bg-[#eef3f9] hover:bg-[#dcebf9] text-slate-700 px-5 py-2.5 rounded-full text-sm font-semibold transition"
           >
             Usar CNPJ
           </button>
           <button
             type="submit"
             disabled={salvandoPix}
-            className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50"
+            className="w-full md:w-auto bg-[#0066cc] hover:bg-[#0052a3] text-white px-6 py-2.5 rounded-full text-sm font-semibold transition disabled:opacity-50"
           >
-            {salvandoPix ? 'Gravando...' : 'Salvar Chave PIX'}
+            {salvandoPix ? 'Gravando...' : 'Salvar chave PIX'}
           </button>
         </form>
       </div>
 
-      {/* 2. CARDS DE RESUMO FINANCEIRO */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase">Faturamento Total</span>
-          <p className="text-2xl font-black text-emerald-600 mt-1">R$ {faturamentoTotal.toFixed(2)}</p>
-          <span className="text-[11px] text-slate-400">Total recebido via PIX</span>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase">Contratos Quitados</span>
-          <p className="text-2xl font-black text-slate-900 mt-1">{totalQuitadas} Locações</p>
-          <span className="text-[11px] text-slate-400">Locações ativas ou concluídas</span>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase">Pagamento Pendente</span>
-          <p className="text-2xl font-black text-amber-600 mt-1">{totalPagamentoPendente} Locações</p>
-          <span className="text-[11px] text-amber-700 font-semibold">Reserva aprovada, aguardando PIX</span>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <span className="text-xs text-slate-500 font-semibold uppercase">Aguardando Confirmação</span>
-          <p className="text-2xl font-black text-orange-600 mt-1">{totalAguardandoConfirmacao} Locações</p>
-          <span className="text-[11px] text-orange-700 font-semibold">PIX declarado pelo cliente</span>
-        </div>
-      </div>
-
-      {/* 3. TABELA DE HISTÓRICO FINANCEIRO */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+      {/* 3. Histórico financeiro */}
+      <div className={`${CARD} space-y-4`}>
         <div className="flex justify-between items-center">
-          <h3 className="text-sm font-bold text-slate-900">Histórico Financeiro</h3>
+          <h3 className="text-base font-bold text-slate-900">Histórico financeiro</h3>
           <button
             type="button"
             onClick={carregarDadosFinanceiros}
             disabled={carregando}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            className="text-xs font-semibold text-[#0066cc] hover:underline disabled:opacity-50"
           >
-            {carregando ? 'Atualizando...' : '🔄 Atualizar'}
+            {carregando ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-2xl ring-1 ring-slate-100">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+            <thead className="bg-[#f4f7fb] text-slate-500 font-semibold">
               <tr>
-                <th className="py-2.5 px-3">Reserva</th>
-                <th className="py-2.5 px-3">Cliente</th>
-                <th className="py-2.5 px-3">Veículo</th>
-                <th className="py-2.5 px-3">Método</th>
-                <th className="py-2.5 px-3">Valor</th>
-                <th className="py-2.5 px-3">Status / Ação</th>
+                <th className="py-3 px-4">Reserva</th>
+                <th className="py-3 px-4">Cliente</th>
+                <th className="py-3 px-4">Veículo</th>
+                <th className="py-3 px-4">Método</th>
+                <th className="py-3 px-4">Valor</th>
+                <th className="py-3 px-4">Status / ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {recebimentos.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-slate-400">
+                  <td colSpan="6" className="py-10 text-center text-slate-400">
                     Nenhuma movimentação financeira registrada para esta agência até o momento.
                   </td>
                 </tr>
@@ -223,42 +221,42 @@ export function AbaFinanceiro({ agenciaLogada, setMensagemFeedback }) {
                   const isAguardando = r.status === 'AGUARDANDO_CONFIRMACAO';
 
                   return (
-                    <tr key={idItem} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-3 font-mono font-bold text-slate-800">#{idItem}</td>
-                      <td className="py-3 px-3 font-medium text-slate-700">{r.cliente || 'Cliente'}</td>
-                      <td className="py-3 px-3 text-slate-600">{r.veiculo || 'Veículo'}</td>
-                      <td className="py-3 px-3 font-semibold text-blue-600">{r.metodo || 'PIX'}</td>
-                      <td className="py-3 px-3 font-bold text-emerald-600">
+                    <tr key={idItem} className="hover:bg-[#f8fafd]">
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-800">#{idItem}</td>
+                      <td className="py-3.5 px-4 font-medium text-slate-700">{r.cliente || 'Cliente'}</td>
+                      <td className="py-3.5 px-4 text-slate-600">{r.veiculo || 'Veículo'}</td>
+                      <td className="py-3.5 px-4 font-semibold text-[#0066cc]">{r.metodo || 'PIX'}</td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
                         R$ {Number(r.valor || 0).toFixed(2)}
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-4">
                         {isAguardando ? (
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                              Aguardando Confirmação
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800">
+                              Aguardando confirmação
                             </span>
                             <button
                               type="button"
                               onClick={() => handleConfirmarRecebimentoPix(idItem)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold transition shadow-sm"
+                              className="px-3 py-1 bg-[#0066cc] hover:bg-[#0052a3] text-white rounded-full text-[10px] font-semibold transition"
                             >
-                              Confirmar Recebimento PIX
+                              Confirmar recebimento PIX
                             </button>
                           </div>
                         ) : (
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                            r.status === 'ATIVA' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
-                            r.status === 'CONCLUIDA' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                            r.status === 'APROVADA' ? 'bg-amber-100 text-amber-800 border-amber-300' :
-                            r.status === 'PENDENTE' ? 'bg-slate-100 text-slate-700 border-slate-300' :
-                            r.status === 'RECUSADA' ? 'bg-rose-100 text-rose-800 border-rose-200' :
-                            'bg-slate-100 text-slate-800 border-slate-200'
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${
+                            r.status === 'ATIVA' ? 'bg-emerald-100 text-emerald-700' :
+                            r.status === 'CONCLUIDA' ? 'bg-blue-100 text-blue-700' :
+                            r.status === 'APROVADA' ? 'bg-amber-100 text-amber-800' :
+                            r.status === 'PENDENTE' ? 'bg-slate-100 text-slate-700' :
+                            r.status === 'RECUSADA' ? 'bg-rose-100 text-rose-700' :
+                            'bg-slate-100 text-slate-700'
                           }`}>
-                            {r.status === 'ATIVA' ? 'PAGO / ATIVA' :
-                             r.status === 'APROVADA' ? 'PAGAMENTO PENDENTE' :
-                             r.status === 'PENDENTE' ? 'AGUARDANDO APROVAÇÃO' :
-                             r.status === 'CONCLUIDA' ? 'CONCLUÍDA' :
-                             r.status === 'RECUSADA' ? 'RECUSADA' : r.status}
+                            {r.status === 'ATIVA' ? 'Pago / ativa' :
+                             r.status === 'APROVADA' ? 'Pagamento pendente' :
+                             r.status === 'PENDENTE' ? 'Aguardando aprovação' :
+                             r.status === 'CONCLUIDA' ? 'Concluída' :
+                             r.status === 'RECUSADA' ? 'Recusada' : r.status}
                           </span>
                         )}
                       </td>

@@ -75,14 +75,6 @@ async def login_usuario(
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    print("DEBUG AUTH:", {
-                "email_buscado": identificador_email,
-                "cliente_id": cliente.id if cliente else None,
-                "cliente_email_db": cliente.email if cliente else None,
-                "senha_no_db": cliente.senha[:25] if cliente and cliente.senha else None,
-                "autenticou": cliente.autenticar(senha) if cliente else False,
-            })
-
 
 @router.post("/cadastro")
 async def cadastrar_usuario(
