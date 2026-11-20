@@ -2,11 +2,14 @@ from sqlalchemy import Column, String, Enum
 from backend.modelos.cpf import CPF
 from backend.modelos.cnh import CNH
 from backend.modelos.usuario import Usuario, UsuarioModel
+from backend.security import decrypt_value, doc_lookup_hash, encrypt_value, normalize_doc
+
 
 class ClienteModel(UsuarioModel):
     __tablename__ = "clientes"
 
     _cpf = Column("cpf", String, unique=True, index=True, nullable=False)
+    cpf_lookup = Column("cpf_lookup", String(64), index=True, nullable=True)
     cnh = Column(String, nullable=True)
     tipo_perfil = Column(String, default="cliente")
     status = Column(Enum('ATIVO', 'BLOQUEADO', name='statuscliente', create_type=False), default='ATIVO')
@@ -26,10 +29,23 @@ class ClienteModel(UsuarioModel):
 
     @cpf.setter
     def cpf(self, valor):
-        self._cpf = "".join(filter(str.isdigit, str(valor)))
+        if valor is None:
+            self._cpf = None
+            self.cpf_lookup = None
+            return
+        texto = str(valor).strip()
+        # Se já vier cifrado (ex.: na leitura do banco), preserva e atualiza lookup se possível
+        cifrado = decrypt_value(texto)
+        if cifrado != texto:
+            self._cpf = texto
+            self.cpf_lookup = doc_lookup_hash(cifrado)
+        else:
+            norm = normalize_doc(texto)
+            self._cpf = encrypt_value(norm)
+            self.cpf_lookup = doc_lookup_hash(norm)
 
     def get_documento(self):
-        return self._cpf
+        return decrypt_value(self._cpf)
 
     def pode_operar(self):
         return self.status == "ATIVO"

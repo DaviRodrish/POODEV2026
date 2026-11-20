@@ -4,6 +4,7 @@ from backend.database.conexao_postgres import Base
 from backend.modelos.enums import Status, StatusLocacao
 from backend.modelos.cnh import CNH
 
+
 class LocacaoModel(Base):
     __tablename__ = "locacoes"
 
@@ -15,7 +16,7 @@ class LocacaoModel(Base):
     valor_estimado = Column(Float, default=0.0)
     motorista_secundario = Column(Boolean, default=False)
     motorista_nome = Column(String(150), nullable=True)
-    motorista_cnh = Column(String(50), nullable=True)
+    motorista_cnh = Column(String, nullable=True)
     outra_agencia = Column(Boolean, default=False)
     agencia_destino = Column(String(150), nullable=True)
 
@@ -36,7 +37,7 @@ class LocacaoModel(Base):
         if self.status == "RECUSADA":
             return "RECUSADA"
         return self.status
-
+    
 class ErroLocacao(Exception):
     pass
 

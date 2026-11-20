@@ -6,8 +6,10 @@ from backend.modelos.agencia import AgenciaModel
 from backend.modelos.cliente import ClienteModel
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
 from backend.modelos.locacao import LocacaoModel
+from backend.security import decrypt_value, encrypt_value
 
 router = APIRouter(prefix="/api", tags=["Financeiro"])
+
 
 @router.get("/agencias/{agencia_id}/financeiro")
 def obter_financeiro_agencia(agencia_id: int, db: Session = Depends(obter_conexao)):
@@ -43,19 +45,25 @@ def obter_financeiro_agencia(agencia_id: int, db: Session = Depends(obter_conexa
             "data": data_str
         })
 
+    cnpj_claro = decrypt_value(agencia.cnpj) if agencia.cnpj else None
+    pix_raw = agencia.chave_pix or agencia.cnpj
+    pix_claro = decrypt_value(pix_raw) if pix_raw else None
+
     return {
         "agencia_id": agencia.id,
-        "cnpj": agencia.cnpj,
-        "chave_pix": agencia.chave_pix or agencia.cnpj,
+        "cnpj": cnpj_claro,
+        "chave_pix": pix_claro,
         "faturamento_total": round(faturamento_total, 2),
         "locacoes": locacoes
     }
+
 
 @router.put("/agencias/{agencia_id}/chave-pix")
 def atualizar_chave_pix(agencia_id: int, payload: dict = Body(...), db: Session = Depends(obter_conexao)):
     agencia = db.query(AgenciaModel).get(agencia_id)
     if not agencia:
         raise HTTPException(status_code=404, detail="Agência não encontrada")
-    agencia.chave_pix = str(payload.get("chave_pix", "")).strip()
+    nova_chave = str(payload.get("chave_pix", "")).strip()
+    agencia.chave_pix = encrypt_value(nova_chave) if nova_chave else None
     db.commit()
-    return {"sucesso": True, "chave_pix": agencia.chave_pix}
+    return {"sucesso": True, "chave_pix": nova_chave}

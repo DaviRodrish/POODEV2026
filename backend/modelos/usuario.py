@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from sqlalchemy import Column, Integer, String
 from backend.database.conexao_postgres import Base
 from backend.modelos.enums import StatusCliente
+from backend.security import verify_password
 
 
 class UsuarioModel(Base):
@@ -13,7 +14,9 @@ class UsuarioModel(Base):
     senha = Column(String, nullable=False)
 
     def autenticar(self, senha_tentativa):
-        return bool(self.senha) and self.senha == str(senha_tentativa)
+        if not self.senha or senha_tentativa is None:
+            return False
+        return verify_password(str(senha_tentativa), self.senha)
 
     def get_documento(self):
         return ""

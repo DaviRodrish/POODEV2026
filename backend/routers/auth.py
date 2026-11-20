@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from bson import ObjectId
 
 from backend.database.conexao_postgres import obter_conexao
 from backend.database.repositorio_fotos import salvar_cnh_motorista_binaria, colecao_fotos
@@ -9,8 +9,10 @@ from backend.modelos.agencia import AgenciaModel
 from backend.modelos.cliente import ClienteModel
 from backend.modelos.cpf import CPF, CPFError
 from backend.modelos.cnpj import CNPJ, CNPJError
+from backend.security import decrypt_value, doc_lookup_hash, encrypt_value, hash_password, normalize_doc
 
 router = APIRouter(prefix="/api", tags=["Autenticação"])
+
 
 @router.post("/login")
 async def login_usuario(
@@ -19,8 +21,13 @@ async def login_usuario(
     db: Session = Depends(obter_conexao)
 ):
     try:
+        identificador_limpo = identificador.strip()
+        identificador_email = identificador_limpo.lower()
+        id_doc_hash = doc_lookup_hash(identificador_limpo)
+
         cliente = db.query(ClienteModel).filter(
-            (ClienteModel.email == identificador) | (ClienteModel._cpf == identificador)
+            (func.lower(ClienteModel.email) == identificador_email) |
+            (ClienteModel.cpf_lookup == id_doc_hash if id_doc_hash and hasattr(ClienteModel, "cpf_lookup") else (ClienteModel._cpf == identificador_limpo))
         ).first()
 
         if cliente and cliente.autenticar(senha):
@@ -39,10 +46,13 @@ async def login_usuario(
             }
 
         agencia = db.query(AgenciaModel).filter(
-            (AgenciaModel.email == identificador) | (AgenciaModel._cnpj == identificador)
+            (func.lower(AgenciaModel.email) == identificador_email) |
+            (AgenciaModel.cnpj_lookup == id_doc_hash if id_doc_hash and hasattr(AgenciaModel, "cnpj_lookup") else (AgenciaModel._cnpj == identificador_limpo))
         ).first()
 
         if agencia and agencia.autenticar(senha):
+            chave_pix_clara = decrypt_value(agencia.chave_pix) if agencia.chave_pix else None
+            cnpj_claro = decrypt_value(agencia.cnpj) if agencia.cnpj else None
             return {
                 "success": True,
                 "message": "Login de agência efetuado com sucesso!",
@@ -51,8 +61,8 @@ async def login_usuario(
                     "id": agencia.id,
                     "nome": agencia.nome,
                     "email": agencia.email,
-                    "cnpj": agencia.cnpj,
-                    "chave_pix": agencia.chave_pix or agencia.cnpj
+                    "cnpj": cnpj_claro,
+                    "chave_pix": chave_pix_clara or cnpj_claro
                 }
             }
 
@@ -65,6 +75,14 @@ async def login_usuario(
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    print("DEBUG AUTH:", {
+                "email_buscado": identificador_email,
+                "cliente_id": cliente.id if cliente else None,
+                "cliente_email_db": cliente.email if cliente else None,
+                "senha_no_db": cliente.senha[:25] if cliente and cliente.senha else None,
+                "autenticou": cliente.autenticar(senha) if cliente else False,
+            })
+
 
 @router.post("/cadastro")
 async def cadastrar_usuario(
@@ -83,17 +101,35 @@ async def cadastrar_usuario(
         except CPFError:
             raise HTTPException(status_code=400, detail="CPF inválido.")
 
+        cpf_normalizado = normalize_doc(cpf_obj.numero)
+        cpf_hash = doc_lookup_hash(cpf_normalizado)
+        email_limpo = email.strip().lower()
+
         cliente_existente = db.query(ClienteModel).filter(
-            (ClienteModel.email == email) | (ClienteModel._cpf == cpf_obj.numero)
+            (ClienteModel.email == email_limpo) |
+            (ClienteModel.cpf_lookup == cpf_hash if cpf_hash and hasattr(ClienteModel, "cpf_lookup") else (ClienteModel._cpf == cpf_obj.numero))
         ).first()
 
         if cliente_existente:
             raise HTTPException(status_code=400, detail="E-mail ou CPF já cadastrados.")
 
+        cnh_limpa = normalize_doc(cnh) if cnh and cnh.strip() else "Não informada"
+        cnh_armazenar = encrypt_value(cnh_limpa) if cnh_limpa != "Não informada" else "Não informada"
+        cpf_cifrado = encrypt_value(cpf_normalizado)
+        senha_hash = hash_password(senha)
+
         novo_cliente = ClienteModel(
-            nome=nome, email=email, cpf=cpf, cnh=cnh or "Não informada",
-            senha=senha, tipo_perfil=tipoPerfil, status="ATIVO", motivo=None
+            nome=nome.strip(),
+            email=email_limpo,
+            cpf=cpf_cifrado,
+            cnh=cnh_armazenar,
+            senha=senha_hash,
+            tipo_perfil=tipoPerfil,
+            status="ATIVO",
+            motivo=None
         )
+        if hasattr(novo_cliente, "cpf_lookup"):
+            novo_cliente.cpf_lookup = cpf_hash
 
         db.add(novo_cliente)
         db.commit()
@@ -101,7 +137,7 @@ async def cadastrar_usuario(
 
         if fotoCnh and fotoCnh.filename:
             dados_bytes = await fotoCnh.read()
-            
+
             if len(dados_bytes) > 10 * 1024 * 1024:
                 raise HTTPException(status_code=400, detail="A imagem da CNH excede o tamanho máximo permitido (10MB).")
 
@@ -113,9 +149,13 @@ async def cadastrar_usuario(
             )
 
         return {"success": True, "message": "Usuário cadastrado com sucesso!"}
+    except HTTPException as he:
+        db.rollback()
+        raise he
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/cadastro-agencia")
 async def cadastrar_agencia(
@@ -132,33 +172,48 @@ async def cadastrar_agencia(
         except CNPJError:
             raise HTTPException(status_code=400, detail="CNPJ inválido.")
 
+        cnpj_normalizado = normalize_doc(cnpj_obj.numero)
+        cnpj_hash = doc_lookup_hash(cnpj_normalizado)
+        email_limpo = email.strip().lower()
+
         agencia_existente = db.query(AgenciaModel).filter(
-            (AgenciaModel.email == email) | (AgenciaModel._cnpj == cnpj_obj.numero)
+            (AgenciaModel.email == email_limpo) |
+            (AgenciaModel.cnpj_lookup == cnpj_hash if cnpj_hash and hasattr(AgenciaModel, "cnpj_lookup") else (AgenciaModel._cnpj == cnpj_obj.numero))
         ).first()
 
         if agencia_existente:
             raise HTTPException(status_code=400, detail="E-mail ou CNPJ já cadastrados.")
 
         nova_agencia = AgenciaModel(
-            nome=nome, email=email, cnpj=cnpj, senha=senha, endereco=endereco
+            nome=nome.strip(),
+            email=email_limpo,
+            cnpj=encrypt_value(cnpj_normalizado),
+            senha=hash_password(senha),
+            endereco=endereco.strip()
         )
+        if hasattr(nova_agencia, "cnpj_lookup"):
+            nova_agencia.cnpj_lookup = cnpj_hash
 
         db.add(nova_agencia)
         db.commit()
         db.refresh(nova_agencia)
 
         return {"success": True, "message": "Agência cadastrada com sucesso!"}
+    except HTTPException as he:
+        db.rollback()
+        raise he
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/documentos/cnh/{cliente_id}")
 def obter_cnh_cliente(cliente_id: int):
     if colecao_fotos is None:
         raise HTTPException(status_code=500, detail="MongoDB não está conectado.")
-        
+
     doc = colecao_fotos.find_one({"cliente_id": cliente_id, "tipo_documento": "CNH"})
-    
+
     if not doc or "dados_binarios" not in doc:
         raise HTTPException(status_code=404, detail="Documento CNH não encontrado.")
 

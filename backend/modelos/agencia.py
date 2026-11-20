@@ -1,13 +1,16 @@
 from sqlalchemy import Column, String
 from backend.modelos.cnpj import CNPJ
 from backend.modelos.usuario import Usuario, UsuarioModel
+from backend.security import decrypt_value, doc_lookup_hash, encrypt_value, normalize_doc
+
 
 class AgenciaModel(UsuarioModel):
     __tablename__ = "agencias"
 
     _cnpj = Column("cnpj", String, unique=True, index=True, nullable=False)
+    cnpj_lookup = Column("cnpj_lookup", String(64), index=True, nullable=True)
     endereco = Column(String, nullable=False)
-    chave_pix = Column(String(100), nullable=True, default="")
+    chave_pix = Column(String, nullable=True, default="")
     tipo_perfil = "agencia"
 
     def __init__(self, nome: str, email: str, cnpj: str, senha: str = "123", endereco: str = "", chave_pix: str = ""):
@@ -21,15 +24,28 @@ class AgenciaModel(UsuarioModel):
         return self._cnpj
 
     @cnpj.setter
-    def cnpj(self, valor: str):
-        cnpj_obj = CNPJ(valor) if isinstance(valor, str) else valor
-        self._cnpj = cnpj_obj.numero
+    def cnpj(self, valor):
+        if valor is None:
+            self._cnpj = None
+            self.cnpj_lookup = None
+            return
+        texto = str(valor).strip()
+        decifrado = decrypt_value(texto)
+        if decifrado != texto:
+            self._cnpj = texto
+            self.cnpj_lookup = doc_lookup_hash(decifrado)
+        else:
+            norm = normalize_doc(texto)
+            self._cnpj = encrypt_value(norm)
+            self.cnpj_lookup = doc_lookup_hash(norm)
 
     def get_documento(self):
-        return self._cnpj
+        return decrypt_value(self._cnpj)
 
     def get_chave_pix(self):
-        return self.chave_pix if self.chave_pix else self.get_documento()
+        if self.chave_pix:
+            return decrypt_value(self.chave_pix)
+        return self.get_documento()
 
     def pode_operar(self):
         return bool(self._cnpj) and bool(self.endereco)
