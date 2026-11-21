@@ -9,6 +9,8 @@ MONGO_URI = os.getenv("MONGO_URI")
 
 db_mongo = None
 colecao_fotos = None
+colecao_fotos_veiculos = None
+colecao_fotos_odometro = None
 
 try:
     mongo_client = MongoClient(MONGO_URI)
@@ -16,6 +18,8 @@ try:
 
     db_mongo = mongo_client["poodev_imagens"]
     colecao_fotos = db_mongo["fotos_clientes"]
+    colecao_fotos_veiculos = db_mongo["fotos_veiculos"]
+    colecao_fotos_odometro = db_mongo["fotos_odometro"]
     print("Conexão com o MongoDB Atlas estabelecida com sucesso!")
 except Exception as e:
     print(f"Erro ao conectar ao MongoDB Atlas: {e}")
@@ -30,7 +34,7 @@ def salvar_foto_binaria(cliente_id, veiculo_id, nome_arquivo, content_type, dado
         "veiculo_id": veiculo_id,
         "nome_arquivo": nome_arquivo,
         "content_type": content_type,
-        "dados_binarios": dados_binarios, # O PyMongo converte bytes para BinData nativamente
+        "dados_binarios": dados_binarios,
         "enviado_em": datetime.utcnow(),
     }
     resultado = colecao_fotos.insert_one(documento_foto)
@@ -54,8 +58,8 @@ def salvar_cnh_motorista_binaria(cliente_id, nome_arquivo, content_type, dados_b
 
 
 def salvar_foto_odometro_binaria(veiculo_id, nome_arquivo, content_type, dados_binarios, quilometragem=None, cliente_id=None):
-    if colecao_fotos is None:
-        raise Exception("A coleção do MongoDB não está disponível devido a um erro de conexão.")
+    if colecao_fotos_odometro is None:
+        raise Exception("A coleção de fotos de odômetro do MongoDB não está disponível.")
 
     documento_odometro = {
         "veiculo_id": int(veiculo_id),
@@ -67,15 +71,15 @@ def salvar_foto_odometro_binaria(veiculo_id, nome_arquivo, content_type, dados_b
         "dados_binarios": dados_binarios,
         "enviado_em": datetime.utcnow(),
     }
-    resultado = colecao_fotos.insert_one(documento_odometro)
+    resultado = colecao_fotos_odometro.insert_one(documento_odometro)
     return str(resultado.inserted_id)
 
 
 def salvar_foto_veiculo_binaria(veiculo_id, nome_arquivo, content_type, dados_binarios):
-    if colecao_fotos is None:
-        raise Exception("A coleção do MongoDB não está disponível.")
+    if colecao_fotos_veiculos is None:
+        raise Exception("A coleção de fotos de veículos do MongoDB não está disponível.")
 
-    colecao_fotos.delete_many({
+    colecao_fotos_veiculos.delete_many({
         "veiculo_id": int(veiculo_id),
         "tipo_documento": "FOTO_VEICULO"
     })
@@ -88,5 +92,5 @@ def salvar_foto_veiculo_binaria(veiculo_id, nome_arquivo, content_type, dados_bi
         "dados_binarios": dados_binarios,
         "enviado_em": datetime.utcnow(),
     }
-    resultado = colecao_fotos.insert_one(documento_foto)
+    resultado = colecao_fotos_veiculos.insert_one(documento_foto)
     return str(resultado.inserted_id)

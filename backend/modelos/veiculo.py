@@ -1,161 +1,227 @@
-from backend.modelos.enums import Status, TipoVeiculo
-from backend.modelos.fipe import ServicoFipe
-from backend.modelos.veiculo_regras import (
-    CAPACIDADE_TANQUE_PADRAO,
-    NivelCombustivelError,  # noqa: F401  (reexportado)
-    OdometroError,
-    VeiculoStatusError,
-    calcular_taxa_reabastecimento,
-    extrair_cilindrada,
-    validar_nivel,
+from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File, Response
+from sqlalchemy.orm import Session
+
+from backend.database.conexao_postgres import obter_conexao
+from backend.database.repositorio_fotos import (
+    salvar_foto_odometro_binaria,
+    salvar_foto_veiculo_binaria,
+    colecao_fotos_veiculos,
+    colecao_fotos_odometro
 )
+from backend.modelos.veiculo import VeiculoFipe
+from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
+from backend.modelos.agencia import AgenciaModel
+
+router = APIRouter(prefix="/api", tags=["Veículos"])
+
+@router.get("/catalogo/veiculos")
+def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
+    veiculos = db.query(VeiculoAgenciaModel).all()
+    agencias_map = {a.id: a for a in db.query(AgenciaModel).all()}
+    resultado = []
+    for v in veiculos:
+        ag = agencias_map.get(v.agencia_id)
+        resultado.append({
+            "id": v.id,
+            "agencia_id": v.agencia_id,
+            "agencia_nome": ag.nome if ag and ag.nome else f"Agência {v.agencia_id or 1}",
+            "agencia_endereco": ag.endereco if ag and ag.endereco else "Endereço não informado",
+            "placa": v.placa,
+            "marca": v.marca,
+            "modelo": v.modelo,
+            "ano": v.ano,
+            "valor_diaria": v.valor_diaria,
+            "status": v.status,
+            "combustivel_nivel": v.combustivel_nivel,
+            "quilometragem": v.quilometragem,
+            "km_rev": v.km_rev,
+            "fipeP": v.fipeP,
+            "fipeA": v.fipeA,
+            "precisa_revisao": v.precisa_revisao(),
+            "cilindrada": v.cilindrada,
+            "combustivel_tipo": v.tipo_combustivel,
+            "emissao_100km": v.calcular_emissao(100),
+            "foto_url": f"/api/veiculos/{v.id}/foto"
+        })
+    return resultado
 
 
-class VeiculoFipe:
-    """Dados de um veículo conforme a tabela FIPE (antes: `VeiculoModel`, nome enganoso).
+@router.post("/agencias/{agencia_id}/veiculos")
+async def cadastrar_veiculo_agencia(
+    agencia_id: int,
+    placa: str = Form(...),
+    marca_codigo: str = Form(...),
+    modelo_codigo: str = Form(...),
+    ano_codigo: str = Form(...),
+    valor_diaria: float = Form(...),
+    foto: UploadFile = File(None),
+    db: Session = Depends(obter_conexao)
+):
+    try:
+        placa_limpa = placa.strip().upper()
+        existente = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.placa == placa_limpa).first()
+        if existente:
+            raise HTTPException(status_code=400, detail="Veículo já cadastrado com esta placa.")
 
-    O construtor não faz mais I/O: recebe os dados prontos. Use `consultar()`
-    para buscá-los, injetando o serviço (mockável nos testes).
-    """
-
-    def __init__(self, placa, marca_id, modelo_id, ano_id, dados_fipe: dict):
-        if not dados_fipe:
-            raise ValueError("Não foi possível validar os dados do veículo na FIPE.")
-        self.placa = placa
-        self.marca_id = marca_id
-        self.modelo_id = modelo_id
-        self.ano_id = ano_id
-        self.nome_modelo = dados_fipe.get("Modelo")
-        self.marca = dados_fipe.get("Marca")
-        self.ano_modelo = dados_fipe.get("AnoModelo")
-        self.combustivel = dados_fipe.get("Combustivel")
-        self.valor_fipe_texto = dados_fipe.get("Valor")
-        self.valor_mercado = self._converter_valor_para_float(self.valor_fipe_texto)
-
-    @classmethod
-    def consultar(cls, placa, marca_id, modelo_id, ano_id, servico: ServicoFipe = None):
-        servico = servico or ServicoFipe()
-        dados = servico.consultar_preco(marca_id, modelo_id, ano_id)
-        return cls(placa, marca_id, modelo_id, ano_id, dados)
-
-    @property
-    def marca_nome(self):
-        return self.marca or "Marca FIPE"
-
-    @property
-    def modelo_nome(self):
-        return self.nome_modelo or "Modelo FIPE"
-
-    @property
-    def ano_nome(self):
-        return str(self.ano_modelo) if self.ano_modelo else "Ano FIPE"
-
-    @property
-    def cilindrada(self) -> float:
-        return extrair_cilindrada(self.nome_modelo)
-
-    @staticmethod
-    def _converter_valor_para_float(valor_str):
-        if not valor_str:
-            return 0.0
-        limpo = valor_str.replace("R$", "").replace(".", "").replace(",", ".").strip()
-        try:
-            return float(limpo)
-        except ValueError:
-            return 0.0
-
-    def __str__(self):
-        return (f"Veículo [{self.placa}] - {self.marca} {self.nome_modelo} "
-                f"({self.ano_modelo}) | Valor: {self.valor_fipe_texto}")
-
-
-class Veiculo:
-    """Veículo de domínio. Implementa o contrato `VeiculoLocavel`."""
-
-    def __init__(self, placa, marca, modelo, ano, quilometragem, combustivel,
-                 valor_mercado, valor_fipe, capacidade_tanque=CAPACIDADE_TANQUE_PADRAO,
-                 intervalo_revisao=10000, cilindrada=None, status=Status.DISPONIVEL):
-        self.placa = placa
-        self.marca = marca
-        self.modelo = modelo
-        self.ano = ano
-        self.combustivel = combustivel
-        self.valor_mercado = valor_mercado
-        self.valor_fipe = valor_fipe
-        self.capacidade_tanque = capacidade_tanque
-        self.intervalo_revisao = intervalo_revisao
-        self._quilometragem = quilometragem
-        self._km_ultima_revisao = (quilometragem // intervalo_revisao) * intervalo_revisao
-        self._nivel_combustivel = 1.0
-        self._cilindrada = cilindrada
-        self._status = Status(status)
-
-    # ---- estado (somente leitura de fora; mudanças só pelos métodos) ----
-    @property
-    def quilometragem(self):
-        return self._quilometragem
-
-    @property
-    def nivel_combustivel(self):
-        return self._nivel_combustivel
-
-    @property
-    def status(self) -> Status:
-        return self._status
-
-    @property
-    def cilindrada(self) -> float:
-        if self._cilindrada is not None:
-            return float(self._cilindrada)
-        return extrair_cilindrada(self.modelo)
-
-    @property
-    def tipo(self) -> TipoVeiculo:
-        return TipoVeiculo.NOVO if self._quilometragem <= 10000 else TipoVeiculo.USADO
-
-    # ---- transições de estado (contrato VeiculoLocavel) ----
-    def esta_disponivel(self) -> bool:
-        return self._status is Status.DISPONIVEL
-
-    def alugar(self):
-        if not self.esta_disponivel():
-            raise VeiculoStatusError(f"Veículo {self.placa} não está disponível.")
-        self._status = Status.LOCADO
-
-    def liberar(self):
-        self._status = Status.DISPONIVEL
-
-    def enviar_para_manutencao(self):
-        self._status = Status.MANUTENCAO
-
-    # ---- regras ----
-    def alerta_fipe(self) -> bool:  # antes: fipeAlert
-        if not self.valor_mercado or self.valor_mercado <= 0:
-            return False
-        return (self.valor_mercado - self.valor_fipe) / self.valor_mercado >= 0.15
-
-    def abastecer(self, nivel):
-        self._nivel_combustivel = validar_nivel(nivel)
-
-    def atualizar_quilometragem(self, nova_km):  # antes: at_quilometragem
-        if nova_km < self._quilometragem:
-            raise OdometroError(
-                f"Quilometragem inválida: {nova_km} não pode ser menor que {self._quilometragem}"
-            )
-        self._quilometragem = int(nova_km)
-
-    def precisa_revisao(self) -> bool:  # antes: rev
-        return (self._quilometragem - self._km_ultima_revisao) >= self.intervalo_revisao
-
-    def registrar_revisao(self):  # antes: fazerRev
-        self._km_ultima_revisao = self._quilometragem
-
-    def calcular_taxa_reabastecimento(self, nivel_retorno):
-        return calcular_taxa_reabastecimento(
-            self._nivel_combustivel, nivel_retorno, self.capacidade_tanque
+        veic_fipe = VeiculoFipe(
+            placa=placa_limpa,
+            marca_id=marca_codigo,
+            modelo_id=modelo_codigo,
+            ano_id=ano_codigo
         )
 
-    def emissao(self, km, estrategia) -> float:
-        if km < 0:
-            raise ValueError("Quilometragem não pode ser negativa")
-        return estrategia.calc(km, self.cilindrada)
+        novo_veiculo = VeiculoAgenciaModel(
+            agencia_id=agencia_id,
+            placa=placa_limpa,
+            marca=veic_fipe.marca_nome,
+            modelo=veic_fipe.modelo_nome,
+            ano=int(veic_fipe.ano_modelo or 2024),
+            valor_diaria=float(valor_diaria),
+            status="disponível",
+            fipeP=veic_fipe.valor_fipe_texto,
+            fipeA=ano_codigo
+        )
+
+        db.add(novo_veiculo)
+        db.commit()
+        db.refresh(novo_veiculo)
+
+        foto_id = None
+        if foto and foto.filename:
+            dados_foto = await foto.read()
+            if len(dados_foto) <= 10 * 1024 * 1024:
+                try:
+                    foto_id = salvar_foto_veiculo_binaria(
+                        veiculo_id=novo_veiculo.id,
+                        nome_arquivo=foto.filename,
+                        content_type=foto.content_type or "image/jpeg",
+                        dados_binarios=dados_foto
+                    )
+                except Exception as e:
+                    print(f"Erro foto veículo: {e}")
+
+        return {
+            "success": True,
+            "message": "Veículo cadastrado com sucesso!",
+            "veiculo": novo_veiculo,
+            "foto_id": foto_id
+        }
+    except HTTPException as he:
+        raise he
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/veiculos/{veiculo_id}/vistoria")
+async def atualizar_vistoria_veiculo(
+    veiculo_id: int,
+    quilometragem: float = Form(...),
+    combustivel_nivel: float = Form(...),
+    foto_odometro: UploadFile = File(None),
+    foto_veiculo: UploadFile = File(None),
+    db: Session = Depends(obter_conexao)
+):
+    veiculo = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == veiculo_id).first()
+    if not veiculo:
+        raise HTTPException(status_code=404, detail="Veículo não encontrado")
+
+    km_atual = veiculo.quilometragem or 0
+    if quilometragem < km_atual:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Quilometragem inválida: menor que a atual ({km_atual} km)"
+        )
+
+    if combustivel_nivel < 0.0 or combustivel_nivel > 1.0:
+        raise HTTPException(
+            status_code=400,
+            detail="Nível de combustível inválido: entre 0.0 e 1.0"
+        )
+
+    foto_odometro_id = None
+    if foto_odometro and foto_odometro.filename:
+        dados_bytes = await foto_odometro.read()
+        if len(dados_bytes) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Foto do odômetro excede 10MB.")
+        try:
+            foto_odometro_id = salvar_foto_odometro_binaria(
+                veiculo_id=veiculo.id,
+                nome_arquivo=foto_odometro.filename,
+                content_type=foto_odometro.content_type or "image/jpeg",
+                dados_binarios=dados_bytes,
+                quilometragem=int(quilometragem)
+            )
+        except Exception as e:
+            print(f"Erro foto odômetro: {e}")
+
+    foto_veiculo_id = None
+    if foto_veiculo and foto_veiculo.filename:
+        dados_veiculo_bytes = await foto_veiculo.read()
+        if len(dados_veiculo_bytes) <= 10 * 1024 * 1024:
+            try:
+                foto_veiculo_id = salvar_foto_veiculo_binaria(
+                    veiculo_id=veiculo.id,
+                    nome_arquivo=foto_veiculo.filename,
+                    content_type=foto_veiculo.content_type or "image/jpeg",
+                    dados_binarios=dados_veiculo_bytes
+                )
+            except Exception as e:
+                print(f"Erro foto veículo: {e}")
+
+    veiculo.quilometragem = int(quilometragem)
+    veiculo.combustivel_nivel = round(float(combustivel_nivel), 2)
+    if veiculo.precisa_revisao():
+        veiculo.colocar_em_manutencao()
+    db.commit()
+    db.refresh(veiculo)
+
+    tipo_veiculo = "NOVO" if veiculo.quilometragem <= 10000 else "USADO"
+    return {
+        "sucesso": True,
+        "mensagem": "Vistoria registrada com sucesso",
+        "veiculo_id": veiculo.id,
+        "quilometragem": veiculo.quilometragem,
+        "combustivel_nivel": veiculo.combustivel_nivel,
+        "tipo": tipo_veiculo,
+        "foto_odometro_id": foto_odometro_id,
+        "foto_veiculo_id": foto_veiculo_id
+    }
+
+
+@router.get("/veiculos/{veiculo_id}/foto")
+def obter_foto_veiculo(veiculo_id: int):
+    if colecao_fotos_veiculos is None:
+        raise HTTPException(status_code=500, detail="MongoDB Atlas não está conectado.")
+    
+    doc = colecao_fotos_veiculos.find_one(
+        {"veiculo_id": int(veiculo_id), "tipo_documento": "FOTO_VEICULO"},
+        sort=[("enviado_em", -1)]
+    )
+    if not doc or "dados_binarios" not in doc:
+        raise HTTPException(status_code=404, detail="Foto não encontrada.")
+    
+    return Response(
+        content=doc["dados_binarios"],
+        media_type=doc.get("content_type", "image/jpeg")
+    )
+
+
+@router.get("/veiculos/{veiculo_id}/foto-odometro")
+def obter_foto_odometro_veiculo(veiculo_id: int):
+    if colecao_fotos_odometro is None:
+        raise HTTPException(status_code=500, detail="MongoDB Atlas não está conectado.")
+    
+    doc = colecao_fotos_odometro.find_one(
+        {"veiculo_id": int(veiculo_id), "tipo_documento": "ODOMETRO_VISTORIA"},
+        sort=[("enviado_em", -1)]
+    )
+    if not doc or "dados_binarios" not in doc:
+        raise HTTPException(status_code=404, detail="Foto de odômetro não encontrada.")
+    
+    return Response(
+        content=doc["dados_binarios"],
+        media_type=doc.get("content_type", "image/jpeg")
+    )
