@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../../services/api';
 
 const CAMPO =
@@ -7,6 +7,34 @@ const CAMPO =
 export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback, carregarMinhasEmergencias }) {
   const [tipoEmergencia, setTipoEmergencia] = useState('ACIDENTE');
   const [descricaoEmergencia, setDescricaoEmergencia] = useState('');
+  const [coords, setCoords] = useState({ lat: '-21.7633', lng: '-41.3236' });
+  const [statusGps, setStatusGps] = useState('idle');
+
+  const capturarLocalizacao = () => {
+    if (!navigator.geolocation) {
+      setStatusGps('erro');
+      return;
+    }
+
+    setStatusGps('obtendo');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoords({
+          lat: position.coords.latitude.toFixed(6),
+          lng: position.coords.longitude.toFixed(6)
+        });
+        setStatusGps('sucesso');
+      },
+      () => {
+        setStatusGps('erro');
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  useEffect(() => {
+    capturarLocalizacao();
+  }, []);
 
   const handleConfirmarAtendimento = async (emergenciaId) => {
     setMensagemFeedback('');
@@ -50,51 +78,38 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
     e.preventDefault();
     setMensagemFeedback('');
 
-    const locacaoAtiva = minhasReservas.find(r => r.status === 'APROVADA' || r.status === 'RETIRADO');
+    const locacaoAtiva = Array.isArray(minhasReservas)
+      ? minhasReservas.find(r => ['ATIVA', 'APROVADA', 'RETIRADO', 'AGUARDANDO_CONFIRMACAO', 'PENDENTE'].includes(r.status)) || minhasReservas[0]
+      : null;
 
     if (!locacaoAtiva) {
-      setMensagemFeedback({ tipo: 'erro', texto: 'Nenhuma locação ativa para acionar o SOS.' });
+      setMensagemFeedback({ tipo: 'erro', texto: 'Nenhuma locação encontrada para vincular o chamado de SOS.' });
       return;
     }
 
-    const executarEnvio = (lat, lng) => {
-      const formData = new FormData();
-      formData.append('locacao_id', locacaoAtiva.id);
-      formData.append('tipo', tipoEmergencia);
-      formData.append('descricao', descricaoEmergencia);
-      formData.append('latitude', lat);
-      formData.append('longitude', lng);
+    const formData = new FormData();
+    formData.append('locacao_id', locacaoAtiva.id);
+    formData.append('tipo', tipoEmergencia);
+    formData.append('descricao', descricaoEmergencia);
+    formData.append('latitude', coords.lat);
+    formData.append('longitude', coords.lng);
 
-      fetch(`${API_BASE_URL}/api/emergencias`, {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/emergencias`, {
         method: 'POST',
         body: formData
-      })
-      .then(async (res) => {
-        if (res.ok) {
-          setMensagemFeedback({ tipo: 'sucesso', texto: 'SOS acionado! Localização enviada ao seguro.' });
-          setDescricaoEmergencia('');
-          carregarMinhasEmergencias();
-        } else {
-          const erroJson = await res.json();
-          setMensagemFeedback({ tipo: 'erro', texto: erroJson.detail || 'Erro ao enviar SOS.' });
-        }
-      })
-      .catch(() => setMensagemFeedback({ tipo: 'erro', texto: 'Erro de conexão com o servidor.' }));
-    };
+      });
 
-    if (navigator.geolocation) {
-      setMensagemFeedback({ tipo: 'sucesso', texto: 'Obtendo localização GPS...' });
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          executarEnvio(position.coords.latitude.toString(), position.coords.longitude.toString());
-        },
-        () => {
-          executarEnvio('-21.7633', '-41.3236');
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      executarEnvio('-21.7633', '-41.3236');
+      if (res.ok) {
+        setMensagemFeedback({ tipo: 'sucesso', texto: 'SOS acionado com sucesso! Localização GPS enviada à agência.' });
+        setDescricaoEmergencia('');
+        carregarMinhasEmergencias();
+      } else {
+        const erroJson = await res.json();
+        setMensagemFeedback({ tipo: 'erro', texto: erroJson.detail || 'Erro ao enviar SOS.' });
+      }
+    } catch (err) {
+      setMensagemFeedback({ tipo: 'erro', texto: 'Erro de conexão com o servidor ao enviar SOS.' });
     }
   };
 
@@ -129,6 +144,29 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
             <h2 className="text-lg font-bold text-rose-600">Solicitar emergência</h2>
             <p className="text-sm text-slate-500">Sua localização GPS será enviada automaticamente à agência.</p>
           </div>
+        </div>
+
+        <div className="mb-4 p-3.5 rounded-2xl flex items-center justify-between gap-3 text-xs border border-slate-100 bg-[#f4f7fb]">
+          <div className="flex items-center gap-2.5">
+            <span className={`h-2.5 w-2.5 rounded-full ${
+              statusGps === 'sucesso' ? 'bg-emerald-500' :
+              statusGps === 'obtendo' ? 'bg-amber-500 animate-pulse' :
+              'bg-slate-400'
+            }`} />
+            <span className="text-slate-700 font-medium">
+              {statusGps === 'sucesso' && `GPS Detectado: ${coords.lat}, ${coords.lng}`}
+              {statusGps === 'obtendo' && 'Solicitando autorização de GPS ao navegador...'}
+              {statusGps === 'erro' && 'GPS não autorizado. Usando fallback UENF (-21.7633, -41.3236)'}
+              {statusGps === 'idle' && 'Aguardando GPS...'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={capturarLocalizacao}
+            className="text-[11px] font-semibold text-[#0066cc] hover:underline"
+          >
+            {statusGps === 'erro' ? 'Tentar novamente' : 'Atualizar'}
+          </button>
         </div>
 
         <form onSubmit={enviarSos} className="space-y-4">
