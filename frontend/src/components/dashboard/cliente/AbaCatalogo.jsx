@@ -128,7 +128,6 @@ export function AbaCatalogo({
             return (
               <div key={v.id} className="bg-white border border-slate-200 rounded-2xl p-6 md:p-7 min-h-[460px] flex flex-col justify-between shadow-sm hover:shadow-md transition">
                 <div className="space-y-4">
-                  {/* Identificação Visível da Agência & Badge de Revisão */}
                   <div className="flex justify-between items-center">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
                       <span>🏢</span>
@@ -139,6 +138,26 @@ export function AbaCatalogo({
                         Revisão
                       </span>
                     )}
+                  </div>
+
+                  <div className="w-full h-36 bg-slate-100 rounded-xl overflow-hidden relative flex items-center justify-center">
+                    <img 
+                      src={`http://localhost:8000/api/veiculos/${v.id}/foto`}
+                      alt={`${v.marca} ${v.modelo}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        if (e.target.nextElementSibling) {
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                    <div style={{ display: 'none' }} className="w-full h-full items-center justify-center bg-slate-100 text-slate-400">
+                      <svg className="w-12 h-12 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                      </svg>
+                    </div>
                   </div>
 
                   <div className="flex justify-between items-start">

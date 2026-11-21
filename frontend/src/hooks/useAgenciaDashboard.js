@@ -157,7 +157,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     setErroVistoriaModal('');
   };
 
-  const handleSalvarVistoria = async (e, fotoOdometro = null, onSucessoExtra = null) => {
+  const handleSalvarVistoria = async (e, fotoOdometro = null, fotoVeiculo = null, onSucessoExtra = null) => {
     e.preventDefault();
     setErroVistoriaModal('');
     const kmAtual = veiculoVistoria?.quilometragem || 0;
@@ -165,7 +165,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     const combustivelInformado = parseFloat(novoCombustivelInput);
 
     if (isNaN(kmInformado) || kmInformado < kmAtual) {
-      setErroVistoriaModal(`Quilometragem inválida: ${kmInformado} km não pode ser menor que o atual (${kmAtual} km).`);
+      setErroVistoriaModal(`Quilometragem inválida: menor que a atual (${kmAtual} km).`);
       return;
     }
 
@@ -180,6 +180,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
       formData.append('quilometragem', kmInformado);
       formData.append('combustivel_nivel', combustivelInformado);
       if (fotoOdometro) formData.append('foto_odometro', fotoOdometro);
+      if (fotoVeiculo) formData.append('foto_veiculo', fotoVeiculo);
 
       const res = await fetch(`http://localhost:8000/api/veiculos/${veiculoVistoria.id}/vistoria`, {
         method: 'PUT',
@@ -193,7 +194,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
         carregarManutencoes();
         setMensagemFeedback({ 
           tipo: 'sucesso', 
-          texto: `Vistoria de (${veiculoVistoria.placa}) concluída: ${kmInformado} km e ${Math.round(combustivelInformado * 100)}% de combustível.` 
+          texto: `Vistoria de ${veiculoVistoria.placa} concluída.` 
         });
       } else {
         const dadosErro = await res.json();
@@ -274,7 +275,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     }
   };
 
-  const cadastrarVeiculo = async (e) => {
+  const cadastrarVeiculo = async (e, fotoVeiculo = null) => {
     e.preventDefault();
     setMensagemFeedback('');
 
@@ -284,6 +285,9 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     formData.append('modelo_codigo', modeloCodigo);
     formData.append('ano_codigo', anoCodigo);
     formData.append('valor_diaria', valorDiaria);
+    if (fotoVeiculo) {
+      formData.append('foto', fotoVeiculo);
+    }
 
     try {
       const res = await fetch(`http://localhost:8000/api/agencias/${agenciaLogada.id}/veiculos`, {
