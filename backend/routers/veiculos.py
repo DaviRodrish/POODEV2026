@@ -5,7 +5,8 @@ from backend.database.conexao_postgres import obter_conexao
 from backend.database.repositorio_fotos import (
     salvar_foto_odometro_binaria,
     salvar_foto_veiculo_binaria,
-    colecao_fotos
+    colecao_fotos_veiculos,
+    colecao_fotos_odometro,
 )
 from backend.modelos.veiculo import VeiculoFipe
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
@@ -62,7 +63,7 @@ async def cadastrar_veiculo_agencia(
         if existente:
             raise HTTPException(status_code=400, detail="Veículo já cadastrado com esta placa.")
 
-        veic_fipe = VeiculoFipe(
+        veic_fipe = VeiculoFipe.consultar(
             placa=placa_limpa,
             marca_id=marca_codigo,
             modelo_id=modelo_codigo,
@@ -192,10 +193,10 @@ async def atualizar_vistoria_veiculo(
 
 @router.get("/veiculos/{veiculo_id}/foto")
 def obter_foto_veiculo(veiculo_id: int):
-    if colecao_fotos is None:
+    if colecao_fotos_veiculos is None:
         raise HTTPException(status_code=500, detail="MongoDB Atlas não está conectado.")
     
-    doc = colecao_fotos.find_one(
+    doc = colecao_fotos_veiculos.find_one(
         {"veiculo_id": int(veiculo_id), "tipo_documento": "FOTO_VEICULO"},
         sort=[("enviado_em", -1)]
     )
@@ -210,10 +211,10 @@ def obter_foto_veiculo(veiculo_id: int):
 
 @router.get("/veiculos/{veiculo_id}/foto-odometro")
 def obter_foto_odometro_veiculo(veiculo_id: int):
-    if colecao_fotos is None:
+    if colecao_fotos_odometro is None:
         raise HTTPException(status_code=500, detail="MongoDB Atlas não está conectado.")
     
-    doc = colecao_fotos.find_one(
+    doc = colecao_fotos_odometro.find_one(
         {"veiculo_id": int(veiculo_id), "tipo_documento": "ODOMETRO_VISTORIA"},
         sort=[("enviado_em", -1)]
     )

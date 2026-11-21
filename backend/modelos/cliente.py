@@ -44,7 +44,8 @@ class ClienteModel(UsuarioModel):
         """Mesmo contrato de Condutor.obter_cnh: devolve CNH ou None."""
         if not self.cnh or self.cnh == "Não informada":
             return None
-        return CNH(self.cnh)
+        cnh_decifrada = decrypt_value(self.cnh)
+        return CNH(cnh_decifrada)
 
     def pode_operar(self):
         return self.status == StatusCliente.ATIVO

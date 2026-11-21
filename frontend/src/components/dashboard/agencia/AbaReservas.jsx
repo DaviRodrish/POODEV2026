@@ -1,5 +1,14 @@
 import React from 'react';
 
+function mascararCnhExibicao(valor, visiveisFim = 3) {
+  if (!valor || valor === 'Não informada') return 'Não informada';
+  const limpo = String(valor).trim();
+  if (!limpo) return 'Não informada';
+  if (limpo.includes('•')) return limpo;
+  if (limpo.length <= visiveisFim) return '•'.repeat(limpo.length);
+  return '•'.repeat(limpo.length - visiveisFim) + limpo.slice(-visiveisFim);
+}
+
 export function AbaReservas({ reservasPendentes, responderReserva }) {
   return (
     <section className="bg-white rounded-3xl p-6 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]">
@@ -16,6 +25,10 @@ export function AbaReservas({ reservasPendentes, responderReserva }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {reservasPendentes.map((item) => {
             const apto = item.cliente?.cnh_valida !== false;
+            const cnhExibida = mascararCnhExibicao(
+              item.cliente?.cnh_mascarada || item.cliente?.cnh
+            );
+
             return (
               <div key={item.id} className="bg-[#f4f7fb] rounded-2xl p-5 flex flex-col justify-between gap-4">
                 <div className="space-y-3">
@@ -30,7 +43,7 @@ export function AbaReservas({ reservasPendentes, responderReserva }) {
                     <p className="text-slate-900 font-bold text-sm">{item.cliente?.nome || 'Nome não inf.'}</p>
                     <p className="text-slate-600">E-mail: {item.cliente?.email || 'N/A'}</p>
                     <p className="text-slate-600">
-                      CNH: <span className="font-mono font-semibold">{item.cliente?.cnh || 'Não informada'}</span>
+                      CNH: <span className="font-mono font-semibold">{cnhExibida}</span>
                     </p>
                     <p className="text-slate-600">
                       Aptidão:{' '}

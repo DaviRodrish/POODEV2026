@@ -1,15 +1,33 @@
-from fastapi import APIRouter, Depends, Form, HTTPException
-from sqlalchemy.orm import Session
 from datetime import date, timedelta
 
+from fastapi import APIRouter, Depends, Form, HTTPException
+from sqlalchemy.orm import Session
+
 from backend.database.conexao_postgres import obter_conexao
-from backend.modelos.locacao import Locacao, LocacaoModel, ErroLocacao
-from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
-from backend.modelos.cliente import ClienteModel
 from backend.modelos.agencia import AgenciaModel
+from backend.modelos.cliente import ClienteModel
+from backend.modelos.locacao import ErroLocacao, Locacao, LocacaoModel
 from backend.modelos.pagamento import PagamentoPix
+from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
+from backend.security import decrypt_value
 
 router = APIRouter(prefix="/api", tags=["Reservas"])
+
+
+def mascarar_cnh(cnh_armazenada: str | None, visiveis_fim: int = 3) -> str:
+    """Decifra a CNH armazenada e devolve mascarada, exibindo apenas os últimos caracteres."""
+    if not cnh_armazenada or cnh_armazenada == "Não informada":
+        return "Não informada"
+
+    valor = str(decrypt_value(cnh_armazenada)).strip()
+    if not valor:
+        return "Não informada"
+
+    if len(valor) <= visiveis_fim:
+        return "•" * len(valor)
+
+    return ("•" * (len(valor) - visiveis_fim)) + valor[-visiveis_fim:]
+
 
 @router.post("/reservas")
 async def solicitar_reserva(
@@ -24,7 +42,7 @@ async def solicitar_reserva(
     valor_total: float = Form(...),
     ori: str = Form("Campos dos Goytacazes"),
     dest: str = Form("Campos dos Goytacazes"),
-    db: Session = Depends(obter_conexao)
+    db: Session = Depends(obter_conexao),
 ):
     try:
         cliente_db = db.query(ClienteModel).filter(ClienteModel.id == cliente_id).first()
@@ -45,7 +63,7 @@ async def solicitar_reserva(
             fim=fim,
             diaria=veiculo_db.valor_diaria,
             ori=ori,
-            dest=dest
+            dest=dest,
         )
 
         registro_db = LocacaoModel(
@@ -60,7 +78,7 @@ async def solicitar_reserva(
             outra_agencia=(outra_agencia == "true"),
             agencia_destino=agencia_destino,
             status="PENDENTE",
-            ativa=True
+            ativa=True,
         )
         db.add(registro_db)
         db.commit()
@@ -70,7 +88,7 @@ async def solicitar_reserva(
             "message": "Solicitação de reserva criada com sucesso!",
             "qtd_dias": nova_locacao.qtd_dias,
             "valor_total": float(valor_total),
-            "status": "PENDENTE"
+            "status": "PENDENTE",
         }
 
     except HTTPException as he:
@@ -89,7 +107,26 @@ def listar_reservas_pendentes(agencia_id: int, db: Session = Depends(obter_conex
     for loc in pendentes:
         cli = db.query(ClienteModel).get(loc.cliente_id)
         veic = db.query(VeiculoAgenciaModel).get(loc.veiculo_id)
-        lista.append({"id": loc.id, "dias": loc.dias_contratados, "valor_total": loc.valor_estimado, "cliente": cli, "veiculo": veic})
+
+        cliente_dados = None
+        if cli:
+            cnh_masc = mascarar_cnh(cli.cnh)
+            cliente_dados = {
+                "id": cli.id,
+                "nome": cli.nome,
+                "email": cli.email,
+                "cnh": cnh_masc,
+                "cnh_mascarada": cnh_masc,
+                "cnh_valida": cli.pode_alugar(),
+            }
+
+        lista.append({
+            "id": loc.id,
+            "dias": loc.dias_contratados,
+            "valor_total": loc.valor_estimado,
+            "cliente": cliente_dados,
+            "veiculo": veic,
+        })
     return lista
 
 
@@ -123,14 +160,14 @@ def pagar_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
     agencia = db.query(AgenciaModel).get(loc.veiculo.agencia_id) if loc.veiculo else None
     chave_destino = agencia.get_chave_pix() if agencia else "agencia@poodev.com"
     pagador = PagamentoPix()
-    recibo = pagador.processar(valor=loc.valor_total, chave_pix_destino=chave_destino)
+    recibo = pagador.processar(valor=loc.valor_total, destino=chave_destino)
     loc.status = "AGUARDANDO_CONFIRMACAO"
     db.commit()
     return {
         "sucesso": True,
         "status": loc.status,
         "mensagem": "Pagamento PIX informado! Aguardando confirmação da agência (RF09).",
-        "recibo": recibo
+        "recibo": recibo.to_dict(),
     }
 
 
@@ -141,7 +178,11 @@ def confirmar_pix_reserva(reserva_id: int, db: Session = Depends(obter_conexao))
         raise HTTPException(status_code=404, detail="Reserva não encontrada")
     loc.status = "ATIVA"
     db.commit()
-    return {"sucesso": True, "status": loc.status, "mensagem": "Recebimento PIX confirmado pela agência! Locação ATIVA."}
+    return {
+        "sucesso": True,
+        "status": loc.status,
+        "mensagem": "Recebimento PIX confirmado pela agência! Locação ATIVA.",
+    }
 
 
 @router.put("/reservas/{reserva_id}/devolver")
