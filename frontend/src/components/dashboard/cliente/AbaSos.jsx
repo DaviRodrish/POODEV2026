@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 const CAMPO =
   'w-full bg-[#f4f7fb] border border-transparent rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-rose-400 focus:ring-2 focus:ring-rose-200 focus:outline-none transition';
@@ -14,7 +15,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
       formData.append('novo_status', 'RESOLVIDO');
       formData.append('status', 'RESOLVIDO');
 
-      const res = await fetch(`http://localhost:8000/api/emergencias/${emergenciaId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/emergencias/${emergenciaId}/status`, {
         method: 'PUT',
         body: formData
       });
@@ -64,7 +65,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
       formData.append('latitude', lat);
       formData.append('longitude', lng);
 
-      fetch('http://localhost:8000/api/emergencias', {
+      fetch(`${API_BASE_URL}/api/emergencias`, {
         method: 'POST',
         body: formData
       })
@@ -194,3 +195,5 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
     </div>
   );
 }
+
+export default AbaSos;

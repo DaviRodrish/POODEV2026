@@ -1,11 +1,11 @@
 import React from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinhasReservas, carregarCatalogo }) {
-
   const handleDevolver = async (reservaId) => {
     setMensagemFeedback('');
     try {
-      const res = await fetch(`http://localhost:8000/api/reservas/${reservaId}/devolver`, {
+      const res = await fetch(`${API_BASE_URL}/api/reservas/${reservaId}/devolver`, {
         method: 'PUT'
       });
       if (res.ok) {
@@ -24,7 +24,7 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
   const handleConfirmarPagamentoPix = async (reservaId) => {
     setMensagemFeedback('');
     try {
-      const res = await fetch(`http://localhost:8000/api/reservas/${reservaId}/pagar`, {
+      const res = await fetch(`${API_BASE_URL}/api/reservas/${reservaId}/pagar`, {
         method: 'PUT'
       });
       if (res.ok) {
@@ -60,8 +60,6 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
             return (
               <div key={reserva.id} className="bg-[#f4f7fb] rounded-2xl p-5 flex flex-col justify-between gap-4">
                 <div className="space-y-3">
-
-                  {/* Cabeçalho do card */}
                   <div className="flex justify-between items-center gap-2">
                     <span className="text-sm font-bold text-slate-900">Reserva #{reserva.id}</span>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -75,7 +73,6 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
                     </span>
                   </div>
 
-                  {/* Veículo, período e retirada */}
                   <div className="bg-white p-4 rounded-xl space-y-3 text-xs">
                     <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                       <span className="text-slate-800 font-bold">Veículo ID: {reserva.veiculo_id}</span>
@@ -116,7 +113,6 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
                   </div>
                 </div>
 
-                {/* Pagamento via PIX quando aprovada */}
                 {reserva.status === 'APROVADA' && (
                   <div className="bg-[#0066cc] text-white rounded-2xl p-4 space-y-3">
                     <div className="flex justify-between items-center text-xs">
@@ -151,7 +147,6 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
                   </div>
                 )}
 
-                {/* Aguardando confirmação da agência */}
                 {reserva.status === 'AGUARDANDO_CONFIRMACAO' && (
                   <div className="bg-amber-50 rounded-2xl p-4 text-xs space-y-1">
                     <div className="font-bold text-amber-900">Pagamento PIX informado</div>
@@ -161,7 +156,6 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
                   </div>
                 )}
 
-                {/* Devolução (somente com a locação ativa) */}
                 {reserva.status === 'ATIVA' && (
                   <button
                     onClick={() => handleDevolver(reserva.id)}
@@ -178,3 +172,5 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
     </section>
   );
 }
+
+export default AbaReservas;

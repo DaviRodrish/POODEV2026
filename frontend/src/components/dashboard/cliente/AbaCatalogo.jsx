@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 const CAMPO =
   'w-full bg-white border border-transparent rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 focus:outline-none transition';
 
-// Ilustração do carro usada no topo de cada card (faz o papel da "foto" do veículo)
 function CarroIlustracao() {
   return (
     <svg viewBox="0 0 240 110" className="h-24 w-auto" aria-hidden="true">
@@ -23,10 +23,8 @@ function CarroIlustracao() {
   );
 }
 
-const API_URL = 'http://localhost:8000';
+const API_URL = API_BASE_URL;
 
-// Procura a foto do veículo em vários nomes de campo comuns e monta uma URL utilizável.
-// Aceita: URL completa, data URI, base64 puro ou caminho relativo servido pelo backend.
 function obterImagemVeiculo(v) {
   const bruto =
     v.imagem_url || v.imagem || v.foto_url || v.foto || v.url_imagem || v.image_url || v.image || v.img || null;
@@ -38,7 +36,6 @@ function obterImagemVeiculo(v) {
   return `${API_URL}/${s.replace(/^\/+/, '')}`;
 }
 
-// Mostra a foto do banco; se não existir ou falhar ao carregar, cai na ilustração
 function ImagemVeiculo({ veiculo }) {
   const src = obterImagemVeiculo(veiculo);
   const [erro, setErro] = useState(false);
@@ -71,7 +68,6 @@ export function AbaCatalogo({
   setMensagemFeedback,
   carregarMinhasReservas
 }) {
-  // Estados para controlar o Modal de Reserva Detalhada
   const [veiculoModal, setVeiculoModal] = useState(null);
   const [diasModal, setDiasModal] = useState(1);
   const [incluirMotoristaSecundario, setIncluirMotoristaSecundario] = useState(false);
@@ -82,7 +78,6 @@ export function AbaCatalogo({
   const [agenciaDestino, setAgenciaDestino] = useState('Rio de Janeiro - Capital');
   const [enviandoReserva, setEnviandoReserva] = useState(false);
 
-  // Abrir modal validando bloqueios e revisões antes
   const abrirModalReserva = (v) => {
     setMensagemFeedback('');
 
@@ -108,11 +103,10 @@ export function AbaCatalogo({
     setVeiculoModal(null);
   };
 
-  // Cálculo de valores arbitrados
   const valorDiaria = veiculoModal?.valor_diaria || 0;
   const subtotalDiarias = valorDiaria * diasModal;
-  const taxaMotorista2 = incluirMotoristaSecundario ? 20 * diasModal : 0; // R$ 20/dia
-  const taxaOutraAgencia = outraAgencia ? 120.00 : 0; // Taxa fixa de logistica R$ 120
+  const taxaMotorista2 = incluirMotoristaSecundario ? 20 * diasModal : 0;
+  const taxaOutraAgencia = outraAgencia ? 120.00 : 0;
   const valorTotalGeral = subtotalDiarias + taxaMotorista2 + taxaOutraAgencia;
 
   const handleConfirmarReserva = async (e) => {
@@ -138,7 +132,7 @@ export function AbaCatalogo({
     form.append("valor_total", valorTotalGeral);
 
     try {
-      const res = await fetch("http://localhost:8000/api/reservas", { method: "POST", body: form });
+      const res = await fetch(`${API_BASE_URL}/api/reservas`, { method: "POST", body: form });
       if (res.ok) {
         setMensagemFeedback({ tipo: 'sucesso', texto: 'Reserva solicitada com sucesso!' });
         carregarMinhasReservas();
@@ -185,7 +179,6 @@ export function AbaCatalogo({
 
             return (
               <div key={v.id} className="bg-white rounded-3xl overflow-hidden flex flex-col shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)] hover:shadow-[0_18px_40px_-20px_rgba(15,23,42,0.4)] transition">
-                {/* Topo: foto do veículo (ou ilustração se não houver) */}
                 <div className="relative bg-gradient-to-b from-[#dcebf9] to-[#eef4fb] h-44 pb-3 flex items-end justify-center overflow-hidden">
                   <span className="absolute top-4 left-4 z-10 bg-white/90 text-[#0066cc] px-3 py-1 rounded-full text-xs font-semibold">
                     {v.agencia_nome || (v.agencia_id ? `Agência ${v.agencia_id}` : 'Agência 1')}
@@ -255,11 +248,9 @@ export function AbaCatalogo({
         </div>
       )}
 
-      {/* MODAL DE FORMULÁRIO DE RESERVA PERSONALIZADA */}
       {veiculoModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Solicitar locação</h3>
@@ -276,8 +267,6 @@ export function AbaCatalogo({
             </div>
 
             <form onSubmit={handleConfirmarReserva} className="space-y-4 text-xs">
-
-              {/* Local de retirada */}
               <div className="bg-[#e6f0fa] rounded-2xl p-4 space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-[#0066cc] text-xs">Local de retirada do veículo</span>
@@ -290,7 +279,6 @@ export function AbaCatalogo({
                 </p>
               </div>
 
-              {/* 1. Quantidade de Dias */}
               <div className="bg-[#f4f7fb] p-4 rounded-2xl space-y-1.5">
                 <label className="block font-semibold text-slate-700">Quantidade de dias</label>
                 <input
@@ -304,7 +292,6 @@ export function AbaCatalogo({
                 <p className="text-[11px] text-slate-500">Subtotal diárias ({diasModal}x): R$ {subtotalDiarias.toFixed(2)}</p>
               </div>
 
-              {/* 2. Motorista Secundário */}
               <div className="bg-[#f4f7fb] p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <label className="font-semibold text-slate-700 flex items-center gap-2 cursor-pointer">
@@ -347,7 +334,6 @@ export function AbaCatalogo({
                 )}
               </div>
 
-              {/* 3. Devolver em Outra Agência */}
               <div className="bg-[#f4f7fb] p-4 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <label className="font-semibold text-slate-700 flex items-center gap-2 cursor-pointer">
@@ -379,7 +365,6 @@ export function AbaCatalogo({
                 )}
               </div>
 
-              {/* Resumo do orçamento */}
               <div className="bg-[#0066cc] text-white rounded-2xl p-5 space-y-1.5">
                 <div className="flex justify-between text-xs text-white/85">
                   <span>Diárias ({diasModal}x)</span>
@@ -403,7 +388,6 @@ export function AbaCatalogo({
                 </div>
               </div>
 
-              {/* Botões de Ação */}
               <div className="flex gap-3 pt-1">
                 <button
                   type="button"
@@ -421,7 +405,6 @@ export function AbaCatalogo({
                   {enviandoReserva ? 'Enviando...' : 'Confirmar reserva'}
                 </button>
               </div>
-
             </form>
           </div>
         </div>
@@ -429,3 +412,5 @@ export function AbaCatalogo({
     </section>
   );
 }
+
+export default AbaCatalogo;
