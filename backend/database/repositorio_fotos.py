@@ -64,8 +64,29 @@ def salvar_foto_odometro_binaria(veiculo_id, nome_arquivo, content_type, dados_b
         "cliente_id": int(cliente_id) if cliente_id is not None else None,
         "nome_arquivo": nome_arquivo,
         "content_type": content_type,
-        "dados_binarios": dados_binarios, # O PyMongo converte bytes para BinData nativamente
+        "dados_binarios": dados_binarios,
         "enviado_em": datetime.utcnow(),
     }
     resultado = colecao_fotos.insert_one(documento_odometro)
+    return str(resultado.inserted_id)
+
+
+def salvar_foto_veiculo_binaria(veiculo_id, nome_arquivo, content_type, dados_binarios):
+    if colecao_fotos is None:
+        raise Exception("A coleção do MongoDB não está disponível.")
+
+    colecao_fotos.delete_many({
+        "veiculo_id": int(veiculo_id),
+        "tipo_documento": "FOTO_VEICULO"
+    })
+
+    documento_foto = {
+        "veiculo_id": int(veiculo_id),
+        "tipo_documento": "FOTO_VEICULO",
+        "nome_arquivo": nome_arquivo,
+        "content_type": content_type or "image/jpeg",
+        "dados_binarios": dados_binarios,
+        "enviado_em": datetime.utcnow(),
+    }
+    resultado = colecao_fotos.insert_one(documento_foto)
     return str(resultado.inserted_id)
