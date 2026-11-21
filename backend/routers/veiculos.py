@@ -7,7 +7,7 @@ from backend.database.repositorio_fotos import (
     salvar_foto_veiculo_binaria,
     colecao_fotos
 )
-from backend.modelos.veiculo import VeiculoModel
+from backend.modelos.veiculo import VeiculoFipe
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
 from backend.modelos.agencia import AgenciaModel
 
@@ -62,7 +62,7 @@ async def cadastrar_veiculo_agencia(
         if existente:
             raise HTTPException(status_code=400, detail="Veículo já cadastrado com esta placa.")
 
-        veic_fipe = VeiculoModel(
+        veic_fipe = VeiculoFipe(
             placa=placa_limpa,
             marca_id=marca_codigo,
             modelo_id=modelo_codigo,

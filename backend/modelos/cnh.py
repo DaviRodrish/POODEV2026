@@ -1,10 +1,15 @@
 from datetime import date
 
+
 class CNHError(Exception):
     pass
 
+
 class CNH:
+    """Value object imutável da habilitação."""
+
     CATEGORIAS_VALIDAS = {"A", "B", "C", "D", "E", "AB", "AC", "AD", "AE"}
+    _CATEGORIAS_CARRO = frozenset("BCDE")
 
     def __init__(self, numero, categoria="B", validade=None):
         if not isinstance(numero, str):
@@ -13,7 +18,6 @@ class CNH:
         num = numero.replace(" ", "").replace(".", "").replace("-", "").strip()
         if len(num) != 11 or not num.isdigit():
             raise CNHError("CNH deve ter 11 digitos.")
-
         if num == num[0] * 11:
             raise CNHError("CNH invalida.")
 
@@ -32,7 +36,8 @@ class CNH:
         self._categoria = cat
         self._validade = validade
 
-    def calc_dv(self, base):
+    @staticmethod
+    def calc_dv(base):
         s1 = sum(int(d) * p for d, p in zip(base, range(9, 0, -1)))
         r1 = s1 % 11
         d1 = 0 if r1 >= 10 else r1
@@ -61,19 +66,29 @@ class CNH:
         ref = data_referencia.date() if hasattr(data_referencia, "date") else data_referencia
         return self._validade >= ref
 
+    @property
+    def _letras(self):
+        # compara por conjunto de letras ("AB" -> {"A","B"}), não por substring
+        return set(self._categoria)
+
     def permite_categoria(self, categoria_exigida="B"):
-        exigida = categoria_exigida.strip().upper()
+        exigida = str(categoria_exigida).strip().upper()
         if exigida == "B":
-            return any(c in self._categoria for c in ("B", "C", "D", "E"))
-        return exigida in self._categoria
+            return self.permite_carro()
+        return set(exigida) <= self._letras
 
     def permite_carro(self):
-        return any(c in self._categoria for c in ("B", "C", "D", "E"))
+        return bool(self._letras & self._CATEGORIAS_CARRO)
 
     def __eq__(self, outro):
-        if isinstance(outro, CNH):
-            return self._numero == outro.numero and self._categoria == outro.categoria
-        return False
+        return (
+            isinstance(outro, CNH)
+            and self._numero == outro.numero
+            and self._categoria == outro.categoria
+        )
+
+    def __hash__(self):
+        return hash((self._numero, self._categoria))
 
     def __str__(self):
         return f"CNH {self._numero} ({self._categoria})"

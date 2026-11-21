@@ -1,35 +1,35 @@
 class CPFError(Exception):
     pass
 
+
 class CPF:
-    def __init__(self, val):
-        if not isinstance(val, str):
-            raise CPFError("Erro")
-        
-        num = val.replace(".", "").replace("-", "").strip()
+    """Value object imutável: valida o CPF na construção."""
+
+    def __init__(self, valor):
+        if not isinstance(valor, str):
+            raise CPFError("CPF deve ser string.")
+
+        num = valor.replace(".", "").replace("-", "").strip()
         if len(num) != 11 or not num.isdigit():
-            raise CPFError("Erro")
+            raise CPFError("CPF deve ter 11 dígitos.")
+        if num == num[0] * 11:
+            raise CPFError("CPF inválido.")
 
-        if num == num[0] * 11: 
-            raise CPFError("Erro")
-
-        d1 = self.calc(num[:9], 10)
-        d2 = self.calc(num[:9] + str(d1), 11)
-
+        d1 = self._calcular_digito(num[:9], 10)
+        d2 = self._calcular_digito(num[:9] + str(d1), 11)
         if num[9:] != f"{d1}{d2}":
-            raise CPFError("Erro")
+            raise CPFError("CPF inválido.")
 
         self._numero = num
 
-    def calc(self, texto, peso):
+    @staticmethod
+    def _calcular_digito(texto, peso):
         soma = 0
         for letra in texto:
             soma += int(letra) * peso
             peso -= 1
         resto = (soma * 10) % 11
-        if resto == 10:
-            resto = 0
-        return resto
+        return 0 if resto == 10 else resto
 
     @property
     def numero(self):
@@ -40,6 +40,13 @@ class CPF:
         return f"{n[:3]}.{n[3:6]}.{n[6:9]}-{n[9:]}"
 
     def __eq__(self, outro):
-        if isinstance(outro, CPF):
-            return self._numero == outro.numero
-        return False
+        return isinstance(outro, CPF) and self._numero == outro.numero
+
+    def __hash__(self):
+        return hash(self._numero)
+
+    def __str__(self):
+        return self.formatado()
+
+    def __repr__(self):
+        return f"CPF('{self.formatado()}')"

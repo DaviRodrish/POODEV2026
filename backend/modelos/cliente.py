@@ -1,8 +1,10 @@
-from sqlalchemy import Column, String, Enum
-from backend.modelos.cpf import CPF
+from sqlalchemy import Column, Enum, String
+
 from backend.modelos.cnh import CNH
-from backend.modelos.usuario import Usuario, UsuarioModel
-from backend.security import decrypt_value, doc_lookup_hash, encrypt_value, normalize_doc
+from backend.modelos.condutor import Condutor
+from backend.modelos.enums import StatusCliente
+from backend.modelos.usuario import UsuarioModel, cifrar_documento, proteger_senha
+from backend.security import decrypt_value
 
 
 class ClienteModel(UsuarioModel):
@@ -12,15 +14,19 @@ class ClienteModel(UsuarioModel):
     cpf_lookup = Column("cpf_lookup", String(64), index=True, nullable=True)
     cnh = Column(String, nullable=True)
     tipo_perfil = Column(String, default="cliente")
-    status = Column(Enum('ATIVO', 'BLOQUEADO', name='statuscliente', create_type=False), default='ATIVO')
+    status = Column(
+        Enum(*[s.value for s in StatusCliente], name="statuscliente", create_type=False),
+        default=StatusCliente.ATIVO.value,
+    )
     motivo = Column(String, nullable=True)
 
-    def __init__(self, nome, email, cpf, cnh=None, senha="123", tipo_perfil="cliente", status="ATIVO", motivo=None):
-        super().__init__(nome=nome, email=email, senha=senha)
+    def __init__(self, nome, email, cpf, cnh=None, senha="123",
+                 tipo_perfil="cliente", status=StatusCliente.ATIVO, motivo=None):
+        super().__init__(nome=nome, email=email, senha=proteger_senha(senha))
         self.cpf = cpf
         self.cnh = cnh
         self.tipo_perfil = tipo_perfil
-        self.status = status
+        self.status = StatusCliente(status).value
         self.motivo = motivo
 
     @property
@@ -29,81 +35,41 @@ class ClienteModel(UsuarioModel):
 
     @cpf.setter
     def cpf(self, valor):
-        if valor is None:
-            self._cpf = None
-            self.cpf_lookup = None
-            return
-        texto = str(valor).strip()
-        # Se já vier cifrado (ex.: na leitura do banco), preserva e atualiza lookup se possível
-        cifrado = decrypt_value(texto)
-        if cifrado != texto:
-            self._cpf = texto
-            self.cpf_lookup = doc_lookup_hash(cifrado)
-        else:
-            norm = normalize_doc(texto)
-            self._cpf = encrypt_value(norm)
-            self.cpf_lookup = doc_lookup_hash(norm)
+        self._cpf, self.cpf_lookup = cifrar_documento(valor)
 
     def get_documento(self):
         return decrypt_value(self._cpf)
 
+    def obter_cnh(self):
+        """Mesmo contrato de Condutor.obter_cnh: devolve CNH ou None."""
+        if not self.cnh or self.cnh == "Não informada":
+            return None
+        return CNH(self.cnh)
+
     def pode_operar(self):
-        return self.status == "ATIVO"
+        return self.status == StatusCliente.ATIVO
 
     def pode_alugar(self):
         return self.pode_operar()
 
     def bloquear(self, motivo):
-        self.status = "BLOQUEADO"
+        self.status = StatusCliente.BLOQUEADO.value
         self.motivo = motivo
 
     def desbloquear(self):
-        self.status = "ATIVO"
+        self.status = StatusCliente.ATIVO.value
         self.motivo = None
 
     def __repr__(self):
         return f"<ClienteModel(id={self.id}, nome='{self.nome}', status='{self.status}')>"
 
 
-class Cliente(Usuario):
-    def __init__(self, nome, email, cpf_str, cnh_num=None, senha="123", status="ATIVO"):
-        super().__init__(nome=nome, email=email, senha=senha, status=status, tipo_perfil="cliente")
-        self.cpf = cpf_str
-        self.cnh = cnh_num
-
-    @property
-    def cpf(self):
-        return self._cpf
-
-    @cpf.setter
-    def cpf(self, valor):
-        self._cpf = CPF(valor) if isinstance(valor, str) else valor
-
-    @property
-    def cnh(self):
-        return self._cnh
-
-    @cnh.setter
-    def cnh(self, valor):
-        if valor is None:
-            self._cnh = None
-        else:
-            self._cnh = CNH(valor) if isinstance(valor, str) else valor
-
-    def get_documento(self):
-        return self.cpf.formatado() if hasattr(self.cpf, "formatado") else str(self.cpf)
-
-    def pode_alugar(self):
-        return self.pode_operar()
+class Cliente(Condutor):
+    def __init__(self, nome, email, cpf_str, cnh_num=None, senha="123", status=StatusCliente.ATIVO):
+        super().__init__(nome=nome, email=email, cpf=cpf_str, cnh=cnh_num,
+                         senha=senha, status=status, tipo_perfil="cliente")
 
     def exibir_dados(self):
-        st = getattr(self.status, "value", self.status)
-        return {
-            "tipo": self.tipo_perfil(),
-            "nome": self.nome,
-            "email": self.email,
-            "documento": self.get_documento(),
-            "cnh": str(self.cnh.numero) if hasattr(self.cnh, "numero") else (str(self.cnh) if self.cnh else None),
-            "status": st,
-            "pode_alugar": self.pode_alugar()
-        }
+        dados = self._dados_base()
+        dados["pode_alugar"] = self.pode_alugar()
+        return dados

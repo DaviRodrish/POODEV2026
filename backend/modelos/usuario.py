@@ -1,22 +1,64 @@
 from abc import ABC, abstractmethod
+
 from sqlalchemy import Column, Integer, String
+
 from backend.database.conexao_postgres import Base
 from backend.modelos.enums import StatusCliente
-from backend.security import verify_password
+from backend.security import (
+    decrypt_value,
+    doc_lookup_hash,
+    encrypt_value,
+    hash_password,
+    normalize_doc,
+    verify_password,
+)
+
+_PREFIXO_HASH = "pbkdf2_sha256$"
 
 
-class UsuarioModel(Base):
+def proteger_senha(senha) -> str:
+    """Garante que a senha esteja no formato de hash que verify_password exige.
+
+    Idempotente: se já vier hasheada (ex.: pela camada de API ou lida do banco),
+    devolve como está. Sem isso, uma senha em texto puro como "123" nunca
+    autenticaria, pois verify_password só aceita "pbkdf2_sha256$salt$hash".
+    """
+    texto = str(senha)
+    return texto if texto.startswith(_PREFIXO_HASH) else hash_password(texto)
+
+
+def cifrar_documento(valor):
+    """Devolve (valor_cifrado, hash_de_busca) para CPF/CNPJ.
+
+    Se o valor já vier cifrado (leitura do banco) ele é preservado.
+    Centraliza a lógica que estava duplicada em ClienteModel e AgenciaModel.
+    """
+    if valor is None:
+        return None, None
+    texto = str(valor).strip()
+    decifrado = decrypt_value(texto)
+    if decifrado != texto:
+        return texto, doc_lookup_hash(decifrado)
+    norm = normalize_doc(texto)
+    return encrypt_value(norm), doc_lookup_hash(norm)
+
+
+class AutenticavelMixin:
+    """Autenticação única, compartilhada por domínio e ORM (antes divergiam)."""
+
+    def autenticar(self, senha_tentativa):
+        if not self.senha or senha_tentativa is None:
+            return False
+        return verify_password(str(senha_tentativa), self.senha)
+
+
+class UsuarioModel(AutenticavelMixin, Base):
     __abstract__ = True
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     nome = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     senha = Column(String, nullable=False)
-
-    def autenticar(self, senha_tentativa):
-        if not self.senha or senha_tentativa is None:
-            return False
-        return verify_password(str(senha_tentativa), self.senha)
 
     def get_documento(self):
         return ""
@@ -25,42 +67,39 @@ class UsuarioModel(Base):
         return True
 
 
-class Usuario(ABC):
-    def __init__(self, nome, email, senha, status="ATIVO", tipo_perfil="usuario"):
+class Usuario(AutenticavelMixin, ABC):
+    def __init__(self, nome, email, senha, status=StatusCliente.ATIVO, tipo_perfil="usuario"):
         self.nome = str(nome).strip()
         self.email = str(email).strip().lower()
-        self.senha = str(senha)
-        if status == "ATIVO" or status == StatusCliente.ATIVO:
-            self.status = StatusCliente.ATIVO
-        elif status == "BLOQUEADO" or status == StatusCliente.BLOQUEADO:
-            self.status = StatusCliente.BLOQUEADO
-        else:
-            self.status = status
+        self.senha = proteger_senha(senha)
+        self._status = StatusCliente(status)  # aceita "ATIVO" ou StatusCliente.ATIVO
         self.motivo = None
         self._tipo_perfil = tipo_perfil
 
-    def autenticar(self, senha):
-        return bool(self.senha) and self.senha == str(senha)
+    @property
+    def status(self):
+        return self._status
 
-    def pode_operar(self):
-        st = getattr(self.status, "value", self.status)
-        return st == "ATIVO"
-
+    @property
     def tipo_perfil(self):
+        # agora é propriedade (string) em todas as classes, inclusive nos models
         return self._tipo_perfil
 
+    def pode_operar(self):
+        return self._status is StatusCliente.ATIVO
+
     def bloquear(self, motivo):
-        self.status = StatusCliente.BLOQUEADO
+        self._status = StatusCliente.BLOQUEADO
         self.motivo = motivo
 
     def desbloquear(self):
-        self.status = StatusCliente.ATIVO
+        self._status = StatusCliente.ATIVO
         self.motivo = None
 
     @abstractmethod
     def get_documento(self):
-        pass
+        ...
 
     @abstractmethod
     def exibir_dados(self):
-        pass
+        ...

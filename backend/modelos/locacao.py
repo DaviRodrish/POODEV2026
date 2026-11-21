@@ -1,8 +1,21 @@
-from datetime import date, datetime
-from sqlalchemy import Column, Integer, Float, String, Boolean, DateTime, ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+
 from backend.database.conexao_postgres import Base
-from backend.modelos.enums import Status, StatusLocacao
 from backend.modelos.cnh import CNH
+from backend.modelos.condutor import Condutor
+from backend.modelos.enums import StatusLocacao
+from backend.modelos.veiculo_regras import VeiculoLocavel
+
+_STATUS_PAGAMENTO = {
+    StatusLocacao.ATIVA: "PAGO",
+    StatusLocacao.CONCLUIDA: "PAGO",
+    StatusLocacao.AGUARDANDO_CONFIRMACAO: "AGUARDANDO_CONFIRMACAO",
+    StatusLocacao.APROVADA: "PAGAMENTO_PENDENTE",
+    StatusLocacao.PENDENTE: "AGUARDANDO_APROVACAO",
+    StatusLocacao.RECUSADA: "RECUSADA",
+}
 
 
 class LocacaoModel(Base):
@@ -20,132 +33,144 @@ class LocacaoModel(Base):
     outra_agencia = Column(Boolean, default=False)
     agencia_destino = Column(String(150), nullable=True)
 
-    status = Column(String(30), default="PENDENTE")
+    status = Column(String(30), default=StatusLocacao.PENDENTE.value)
     ativa = Column(Boolean, default=True)
     data_criacao = Column(DateTime, default=datetime.now)
 
     @property
     def status_pagamento(self):
-        if self.status in ("ATIVA", "CONCLUIDA"):
-            return "PAGO"
-        if self.status == "AGUARDANDO_CONFIRMACAO":
-            return "AGUARDANDO_CONFIRMACAO"
-        if self.status == "APROVADA":
-            return "PAGAMENTO_PENDENTE"
-        if self.status == "PENDENTE":
-            return "AGUARDANDO_APROVACAO"
-        if self.status == "RECUSADA":
-            return "RECUSADA"
-        return self.status
-    
+        try:
+            return _STATUS_PAGAMENTO.get(StatusLocacao(self.status), self.status)
+        except ValueError:
+            return self.status
+
+
 class ErroLocacao(Exception):
     pass
 
+
 class Locacao:
-    def __init__(self, cli, veic, ini, fim, diaria, ori, dest, taxa=150.0):
+    def __init__(self, cli: Condutor, veic: VeiculoLocavel, ini, fim, diaria, ori, dest, taxa=150.0):
         if fim < ini:
             raise ErroLocacao("Datas invalidas.")
         if diaria < 0:
             raise ErroLocacao("Diaria negativa.")
         if taxa < 0:
             raise ErroLocacao("Taxa negativa.")
-        if hasattr(cli, "pode_operar") and not cli.pode_operar():
+        if not cli.pode_alugar():
             raise ErroLocacao("Cliente bloqueado.")
-        elif hasattr(cli, "pode_alugar") and not cli.pode_alugar():
-            raise ErroLocacao("Cliente bloqueado.")
-        if hasattr(veic, "status") and "DISPON" not in str(veic.status).upper():
+        if not veic.esta_disponivel():
             raise ErroLocacao("Veiculo indisponivel.")
 
-        cli_cnh = getattr(cli, "cnh", None)
-        if cli_cnh and cli_cnh != "Não informada":
-            if isinstance(cli_cnh, str):
-                cli_cnh = CNH(cli_cnh)
-            if hasattr(cli_cnh, "esta_valida") and not cli_cnh.esta_valida(fim):
-                raise ErroLocacao("CNH vencida.")
-            if hasattr(cli_cnh, "permite_carro") and not cli_cnh.permite_carro():
-                raise ErroLocacao("Categoria incompativel.")
+        cnh = cli.obter_cnh()
+        if cnh is not None:  # CNH do titular é opcional no cadastro
+            self._validar_cnh(cnh, fim)
 
-        self.cli = cli
-        self.veic = veic
-        self.ini = ini
-        self.fim = fim
-        self.diaria = float(diaria)
-        self.ori = str(ori).strip()
-        self.dest = str(dest).strip()
-        self.taxa = float(taxa)
-        self.status = StatusLocacao.RESERVADA
-        self.km_saida = None
-        self.km_volta = None
-        self.motoristas_secundarios = []
+        self._cli = cli
+        self._veic = veic
+        self._ini = ini
+        self._fim = fim
+        self._diaria = float(diaria)
+        self._ori = str(ori).strip()
+        self._dest = str(dest).strip()
+        self._taxa = float(taxa)
+        self._status = StatusLocacao.RESERVADA
+        self._km_saida = None
+        self._km_volta = None
+        self._motoristas_secundarios = []
+
+    # ---- leitura ----
+    @property
+    def cli(self): return self._cli
+    @property
+    def veic(self): return self._veic
+    @property
+    def veiculo(self): return self._veic
+    @property
+    def ini(self): return self._ini
+    @property
+    def fim(self): return self._fim
+    @property
+    def diaria(self): return self._diaria
+    @property
+    def ori(self): return self._ori
+    @property
+    def dest(self): return self._dest
+    @property
+    def taxa(self): return self._taxa
+    @property
+    def status(self): return self._status
+    @property
+    def km_saida(self): return self._km_saida
+    @property
+    def km_volta(self): return self._km_volta
+
+    @property
+    def motoristas_secundarios(self):
+        return tuple(self._motoristas_secundarios)
+
+    @property
+    def motorista_secundario(self):
+        return self._motoristas_secundarios[0] if self._motoristas_secundarios else None
 
     @property
     def qtd_dias(self):
-        dias = (self.fim - self.ini).days
+        dias = (self._fim - self._ini).days
         return dias if dias > 0 else 1
 
     @property
     def taxa_extra(self):
-        if self.ori.upper() != self.dest.upper():
-            return self.taxa
-        return 0.0
-
-    @property
-    def motorista_secundario(self):
-        if self.motoristas_secundarios:
-            return self.motoristas_secundarios[0]
-        return None
+        return self._taxa if self._ori.upper() != self._dest.upper() else 0.0
 
     def total(self):
-        return (self.qtd_dias * self.diaria) + self.taxa_extra
+        return (self.qtd_dias * self._diaria) + self.taxa_extra
 
-    def retirar(self, km):
-        if self.status != StatusLocacao.RESERVADA:
-            raise ErroLocacao("Locacao nao reservada.")
-        if km < 0:
-            raise ErroLocacao("KM negativo.")
-        self.km_saida = float(km)
-        self.status = StatusLocacao.ATIVA
-        if hasattr(self.veic, "status"):
-            self.veic.status = Status.LOCADO
-
-    def devolver(self, km):
-        if self.status != StatusLocacao.ATIVA:
-            raise ErroLocacao("Locacao nao ativa.")
-        if self.km_saida is not None and km < self.km_saida:
-            raise ErroLocacao("KM menor que saida.")
-        self.km_volta = float(km)
-        self.status = StatusLocacao.CONCLUIDA
-        if hasattr(self.veic, "status"):
-            self.veic.status = Status.DISPONIVEL
-
-    def cancelar(self):
-        if self.status != StatusLocacao.RESERVADA:
-            raise ErroLocacao("Locacao nao reservada.")
-        self.status = StatusLocacao.CANCELADA
-        if hasattr(self.veic, "status"):
-            self.veic.status = Status.DISPONIVEL
-
-    def adicionar_motorista_secundario(self, motorista, categoria="B"):
-        if self.status != StatusLocacao.RESERVADA:
-            raise ErroLocacao("Locacao nao reservada.")
-        if hasattr(motorista, "pode_operar") and not motorista.pode_operar():
-            raise ErroLocacao("Motorista bloqueado.")
-        elif hasattr(motorista, "pode_alugar") and not motorista.pode_alugar():
-            raise ErroLocacao("Motorista bloqueado.")
-        if motorista == self.cli or getattr(motorista, "cpf", 1) == getattr(self.cli, "cpf", 2):
-            raise ErroLocacao("Motorista e o titular.")
-        if motorista in self.motoristas_secundarios:
-            raise ErroLocacao("Motorista ja cadastrado.")
-
-        cnh = getattr(motorista, "cnh", motorista)
-        if not cnh:
-            raise ErroLocacao("CNH ausente.")
-        if isinstance(cnh, str):
-            cnh = CNH(cnh)
-
-        if not hasattr(cnh, "esta_valida") or not cnh.esta_valida(self.fim):
+    # ---- regras ----
+    @staticmethod
+    def _validar_cnh(cnh: CNH, data_ref, categoria="B"):
+        if not cnh.esta_valida(data_ref):
             raise ErroLocacao("CNH vencida.")
-        if not hasattr(cnh, "permite_carro") or not cnh.permite_carro():
+        if not cnh.permite_categoria(categoria):
             raise ErroLocacao("Categoria incompativel.")
 
-        self.motoristas_secundarios.append(motorista)
+    def _exigir_status(self, esperado: StatusLocacao, mensagem: str):
+        if self._status is not esperado:
+            raise ErroLocacao(mensagem)
+
+    # ---- transições de estado: o veículo muda por métodos, não por atribuição ----
+    def retirar(self, km):
+        self._exigir_status(StatusLocacao.RESERVADA, "Locacao nao reservada.")
+        if km < 0:
+            raise ErroLocacao("KM negativo.")
+        self._veic.alugar()
+        self._km_saida = float(km)
+        self._status = StatusLocacao.ATIVA
+
+    def devolver(self, km):
+        self._exigir_status(StatusLocacao.ATIVA, "Locacao nao ativa.")
+        if self._km_saida is not None and km < self._km_saida:
+            raise ErroLocacao("KM menor que saida.")
+        self._km_volta = float(km)
+        self._status = StatusLocacao.CONCLUIDA
+        self._veic.liberar()
+
+    def cancelar(self):
+        self._exigir_status(StatusLocacao.RESERVADA, "Locacao nao reservada.")
+        self._status = StatusLocacao.CANCELADA
+        self._veic.liberar()
+
+    def adicionar_motorista_secundario(self, motorista: Condutor, categoria="B"):
+        self._exigir_status(StatusLocacao.RESERVADA, "Locacao nao reservada.")
+        if not motorista.pode_alugar():
+            raise ErroLocacao("Motorista bloqueado.")
+        if motorista.cpf == self._cli.cpf:
+            raise ErroLocacao("Motorista e o titular.")
+        if any(m.cpf == motorista.cpf for m in self._motoristas_secundarios):
+            raise ErroLocacao("Motorista ja cadastrado.")
+
+        cnh = motorista.obter_cnh()
+        if cnh is None:
+            raise ErroLocacao("CNH ausente.")
+        self._validar_cnh(cnh, self._fim, categoria)
+
+        self._motoristas_secundarios.append(motorista)
