@@ -1,5 +1,64 @@
-import React, { useState } from 'react';
-import { API_BASE_URL } from '../../../services/api';
+import React, { useState, useEffect } from 'react';
+
+const CAMPO =
+  'w-full bg-white border border-transparent rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 focus:outline-none transition';
+
+// Ilustração do carro usada no topo de cada card (faz o papel da "foto" do veículo)
+function CarroIlustracao() {
+  return (
+    <svg viewBox="0 0 240 110" className="h-24 w-auto" aria-hidden="true">
+      <ellipse cx="120" cy="94" rx="78" ry="6" fill="#0f172a" opacity="0.12" />
+      <path
+        d="M34 80C34 70 40 64 50 62L68 34C73 27 80 24 90 24H146C156 24 164 28 170 36L186 60C196 63 202 70 202 79V86H34Z"
+        fill="#0066cc"
+      />
+      <path d="M78 40H112V60H64Z" fill="#e6f0fa" />
+      <path d="M122 40H146C150 40 153 42 155 45L168 60H122Z" fill="#e6f0fa" />
+      <rect x="190" y="70" width="12" height="7" rx="3" fill="#fde9c8" />
+      <circle cx="72" cy="86" r="14" fill="#1e293b" />
+      <circle cx="72" cy="86" r="5.5" fill="#cbd5e1" />
+      <circle cx="164" cy="86" r="14" fill="#1e293b" />
+      <circle cx="164" cy="86" r="5.5" fill="#cbd5e1" />
+    </svg>
+  );
+}
+
+const API_URL = 'http://localhost:8000';
+
+// Procura a foto do veículo em vários nomes de campo comuns e monta uma URL utilizável.
+// Aceita: URL completa, data URI, base64 puro ou caminho relativo servido pelo backend.
+function obterImagemVeiculo(v) {
+  const bruto =
+    v.imagem_url || v.imagem || v.foto_url || v.foto || v.url_imagem || v.image_url || v.image || v.img || null;
+  if (!bruto || typeof bruto !== 'string') return null;
+  const s = bruto.trim();
+  if (!s) return null;
+  if (/^(https?:|data:|blob:)/i.test(s)) return s;
+  if (s.length > 100 && /^[A-Za-z0-9+/=\s]+$/.test(s)) return `data:image/jpeg;base64,${s.replace(/\s/g, '')}`;
+  return `${API_URL}/${s.replace(/^\/+/, '')}`;
+}
+
+// Mostra a foto do banco; se não existir ou falhar ao carregar, cai na ilustração
+function ImagemVeiculo({ veiculo }) {
+  const src = obterImagemVeiculo(veiculo);
+  const [erro, setErro] = useState(false);
+
+  useEffect(() => {
+    setErro(false);
+  }, [src]);
+
+  if (!src || erro) return <CarroIlustracao />;
+
+  return (
+    <img
+      src={src}
+      alt={`${veiculo.marca} ${veiculo.modelo}`}
+      loading="lazy"
+      onError={() => setErro(true)}
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
+}
 
 export function AbaCatalogo({
   veiculos,
@@ -18,7 +77,7 @@ export function AbaCatalogo({
   const [incluirMotoristaSecundario, setIncluirMotoristaSecundario] = useState(false);
   const [nomeMotorista2, setNomeMotorista2] = useState('');
   const [cnhMotorista2, setCnhMotorista2] = useState('');
-  
+
   const [outraAgencia, setOutraAgencia] = useState(false);
   const [agenciaDestino, setAgenciaDestino] = useState('Rio de Janeiro - Capital');
   const [enviandoReserva, setEnviandoReserva] = useState(false);
@@ -79,7 +138,7 @@ export function AbaCatalogo({
     form.append("valor_total", valorTotalGeral);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/reservas`, { method: "POST", body: form });
+      const res = await fetch("http://localhost:8000/api/reservas", { method: "POST", body: form });
       if (res.ok) {
         setMensagemFeedback({ tipo: 'sucesso', texto: 'Reserva solicitada com sucesso!' });
         carregarMinhasReservas();
@@ -99,12 +158,9 @@ export function AbaCatalogo({
 
   return (
     <section className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">Escolha o seu Veículo</h2>
-          <p className="text-xs text-slate-500">Selecione o período e personalize sua locação</p>
-        </div>
-        <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-xl text-xs font-bold">
+      <div className="flex justify-between items-center gap-3">
+        <p className="text-sm text-slate-600">Selecione o período e personalize sua locação</p>
+        <span className="bg-white text-[#0066cc] px-4 py-1.5 rounded-full text-xs font-bold shadow-[0_8px_20px_-14px_rgba(15,23,42,0.4)] whitespace-nowrap">
           Disponíveis: {veiculosDisponiveis.length}
         </span>
       </div>
@@ -112,7 +168,7 @@ export function AbaCatalogo({
       {carregando ? (
         <div className="py-12 text-center text-slate-400 text-sm">Carregando catálogo...</div>
       ) : veiculosDisponiveis.length === 0 ? (
-        <div className="py-12 text-center text-slate-400 text-sm border-2 border-dashed border-slate-200 rounded-2xl bg-white">
+        <div className="py-12 text-center text-slate-400 text-sm rounded-3xl bg-white">
           Nenhum veículo disponível no momento.
         </div>
       ) : (
@@ -121,99 +177,77 @@ export function AbaCatalogo({
             const combustivelPct = Math.round((v.combustivel_nivel ?? 1.0) * 100);
             const emRevisao = v.precisa_revisao || v.status === 'manutenção';
             const alugado = v.status === 'alugado';
-            
+            const novo = (v.quilometragem || 0) <= 10000;
+
             const minhaReservaDoVeiculo = minhasReservas.find(r => r.veiculo_id === v.id && (r.status === 'PENDENTE' || r.status === 'APROVADA'));
             const statusReserva = minhaReservaDoVeiculo ? minhaReservaDoVeiculo.status : null;
             const bloqueadoParaAluguel = isBloqueado || emRevisao || (alugado && !minhaReservaDoVeiculo) || statusReserva;
 
             return (
-              <div key={v.id} className="bg-white border border-slate-200 rounded-2xl p-6 md:p-7 min-h-[460px] flex flex-col justify-between shadow-sm hover:shadow-md transition">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
-                      <span>🏢</span>
-                      <span>{v.agencia_nome || (v.agencia_id ? `Agência ${v.agencia_id}` : 'Agência 1')}</span>
+              <div key={v.id} className="bg-white rounded-3xl overflow-hidden flex flex-col shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)] hover:shadow-[0_18px_40px_-20px_rgba(15,23,42,0.4)] transition">
+                {/* Topo: foto do veículo (ou ilustração se não houver) */}
+                <div className="relative bg-gradient-to-b from-[#dcebf9] to-[#eef4fb] h-44 pb-3 flex items-end justify-center overflow-hidden">
+                  <span className="absolute top-4 left-4 z-10 bg-white/90 text-[#0066cc] px-3 py-1 rounded-full text-xs font-semibold">
+                    {v.agencia_nome || (v.agencia_id ? `Agência ${v.agencia_id}` : 'Agência 1')}
+                  </span>
+                  {emRevisao && (
+                    <span className="absolute top-4 right-4 z-10 px-3 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                      Revisão
                     </span>
-                    {emRevisao && (
-                      <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-100 text-amber-800">
-                        Revisão
-                      </span>
-                    )}
-                  </div>
+                  )}
+                  <ImagemVeiculo veiculo={v} />
+                </div>
 
-                  <div className="w-full h-36 bg-slate-100 rounded-xl overflow-hidden relative flex items-center justify-center">
-                    <img 
-                      src={`${API_BASE_URL}/api/veiculos/${v.id}/foto`}
-                      alt={`${v.marca} ${v.modelo}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        if (e.target.nextElementSibling) {
-                          e.target.nextElementSibling.style.display = 'flex';
-                        }
-                      }}
-                    />
-                    <div style={{ display: 'none' }} className="w-full h-full items-center justify-center bg-slate-100 text-slate-400">
-                      <svg className="w-12 h-12 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                      </svg>
+                <div className="p-6 flex flex-col justify-between flex-1 gap-5">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="font-bold text-lg text-slate-900 leading-tight">{v.marca} {v.modelo}</h3>
+                      <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold ${novo ? 'bg-violet-100 text-violet-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {novo ? 'Novo' : 'Usado'}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-500">
+                      Placa <span className="font-mono text-slate-700">{v.placa}</span> • Ano {v.ano}
+                    </p>
+
+                    <div className="flex items-center gap-3 text-xs text-slate-600 bg-[#f4f7fb] px-3.5 py-2.5 rounded-2xl">
+                      <span className="font-semibold text-emerald-700">Tanque {combustivelPct}%</span>
+                      <span className="text-slate-300">•</span>
+                      <span>{v.quilometragem || 0} km</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-xs bg-emerald-50 text-emerald-800 px-3.5 py-2.5 rounded-2xl">
+                      <span className="font-medium">
+                        Motor {v.cilindrada > 0 ? Number(v.cilindrada).toFixed(1) : 'EV'} • {v.combustivel_tipo || 'Gasolina'}
+                      </span>
+                      <span className="font-bold">{v.emissao_100km ?? 18} kg CO₂ / 100km</span>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-base text-slate-900">{v.marca} {v.modelo}</h3>
-                  </div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-xs text-slate-500">Diária</span>
+                      <p className="text-xl font-bold text-[#0066cc] leading-tight">R$ {v.valor_diaria}</p>
+                    </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-600">
-                    <p>Placa: <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{v.placa}</span> • Ano: {v.ano}</p>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      (v.quilometragem || 0) <= 10000
-                        ? 'bg-purple-100 text-purple-700 border border-purple-300'
-                        : 'bg-blue-100 text-blue-700 border border-blue-300'
-                    }`}>
-                      {(v.quilometragem || 0) <= 10000 ? 'Novo' : 'Usado'}
-                    </span>
+                    <button
+                      onClick={() => abrirModalReserva(v)}
+                      disabled={!!bloqueadoParaAluguel}
+                      className={`px-5 py-2.5 rounded-full text-sm font-semibold transition ${
+                        statusReserva === 'PENDENTE' ? 'bg-amber-100 text-amber-800 cursor-not-allowed' :
+                        statusReserva === 'APROVADA' ? 'bg-emerald-100 text-emerald-800 cursor-not-allowed' :
+                        bloqueadoParaAluguel ? 'bg-slate-100 text-slate-400 cursor-not-allowed' :
+                        'bg-[#0066cc] hover:bg-[#0052a3] text-white shadow-[0_10px_24px_-12px_rgba(0,102,204,0.7)]'
+                      }`}
+                    >
+                      {statusReserva === 'PENDENTE' ? 'Solicitado' :
+                       statusReserva === 'APROVADA' ? 'Reservado' :
+                       isBloqueado ? 'Bloqueado' :
+                       emRevisao ? 'Em revisão' :
+                       alugado ? 'Alugado' : 'Reservar'}
+                    </button>
                   </div>
-                  
-                  <div className="flex items-center gap-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <span className="font-medium text-emerald-700">⛽ Tanque: {combustivelPct}%</span>
-                    <span>•</span>
-                    <span>Odômetro: {v.quilometragem || 0} km</span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs bg-emerald-50/70 text-emerald-800 px-3 py-2 rounded-xl border border-emerald-200">
-                    <span className="font-medium">
-                      ⚙️ Motor {v.cilindrada > 0 ? Number(v.cilindrada).toFixed(1) : 'EV'} • {v.combustivel_tipo || 'Gasolina'}
-                    </span>
-                    <span className="font-bold">
-                      🌱 {v.emissao_100km ?? 18} kg CO₂ / 100km
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                  <div>
-                    <span className="text-xs text-slate-500">Diária</span>
-                    <p className="text-base font-bold text-blue-600">R$ {v.valor_diaria}</p>
-                  </div>
-
-                  <button 
-                    onClick={() => abrirModalReserva(v)}
-                    disabled={!!bloqueadoParaAluguel}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-sm ${
-                      statusReserva === 'PENDENTE' ? 'bg-amber-100 text-amber-800 cursor-not-allowed' :
-                      statusReserva === 'APROVADA' ? 'bg-emerald-100 text-emerald-800 cursor-not-allowed' :
-                      bloqueadoParaAluguel ? 'bg-slate-200 text-slate-500 cursor-not-allowed' :
-                      'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    {statusReserva === 'PENDENTE' ? 'Solicitado ⏳' : 
-                     statusReserva === 'APROVADA' ? 'Reservado ✅' : 
-                     isBloqueado ? 'Bloqueado' : 
-                     emRevisao ? 'Em Revisão' : 
-                     alugado ? 'Alugado' : 'Reservar 📋'}
-                  </button>
                 </div>
               </div>
             );
@@ -223,91 +257,90 @@ export function AbaCatalogo({
 
       {/* MODAL DE FORMULÁRIO DE RESERVA PERSONALIZADA */}
       {veiculoModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
-            
-            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+
+            <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-base font-bold text-slate-900">Solicitar Locação</h3>
-                <p className="text-xs text-slate-500">{veiculoModal.marca} {veiculoModal.modelo} • Diária: R$ {veiculoModal.valor_diaria}</p>
+                <h3 className="text-base font-bold text-slate-900">Solicitar locação</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{veiculoModal.marca} {veiculoModal.modelo} • Diária: R$ {veiculoModal.valor_diaria}</p>
               </div>
-              <button 
-                type="button" 
-                onClick={fecharModalReserva} 
-                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 rounded-lg hover:bg-slate-100 transition"
+              <button
+                type="button"
+                onClick={fecharModalReserva}
+                aria-label="Fechar"
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold h-8 w-8 rounded-full hover:bg-slate-100 transition"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleConfirmarReserva} className="space-y-4 text-xs">
-              
-              {/* BLOCO DESTACADO: LOCAL DE RETIRADA */}
-              <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-blue-900 uppercase text-[11px] tracking-wide flex items-center gap-1.5">
-                    <span className="text-rose-500 text-sm">📍</span> Local de Retirada do Veículo
-                  </span>
-                  <span className="text-[11px] font-semibold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
-                    🏢 {veiculoModal.agencia_nome || (veiculoModal.agencia_id ? `Agência ${veiculoModal.agencia_id}` : 'Agência 1')}
+
+              {/* Local de retirada */}
+              <div className="bg-[#e6f0fa] rounded-2xl p-4 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-[#0066cc] text-xs">Local de retirada do veículo</span>
+                  <span className="text-[11px] font-semibold text-[#0066cc] bg-white/80 px-2.5 py-0.5 rounded-full">
+                    {veiculoModal.agencia_nome || (veiculoModal.agencia_id ? `Agência ${veiculoModal.agencia_id}` : 'Agência 1')}
                   </span>
                 </div>
-                <p className="text-slate-700 font-medium text-xs pl-5">
-                  📍 Local de Retirada: {veiculoModal.agencia_endereco || 'Av. Alberto Lamego, 2000 • Parque Califórnia'}
+                <p className="text-slate-700 font-medium text-xs">
+                  {veiculoModal.agencia_endereco || 'Av. Alberto Lamego, 2000 • Parque Califórnia'}
                 </p>
               </div>
-              
+
               {/* 1. Quantidade de Dias */}
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
-                <label className="block font-bold text-slate-700 uppercase">Quantidade de Dias</label>
-                <input 
-                  type="number" 
-                  min="1" 
+              <div className="bg-[#f4f7fb] p-4 rounded-2xl space-y-1.5">
+                <label className="block font-semibold text-slate-700">Quantidade de dias</label>
+                <input
+                  type="number"
+                  min="1"
                   value={diasModal}
                   onChange={(e) => setDiasModal(parseInt(e.target.value) || 1)}
                   required
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className={CAMPO}
                 />
                 <p className="text-[11px] text-slate-500">Subtotal diárias ({diasModal}x): R$ {subtotalDiarias.toFixed(2)}</p>
               </div>
 
               {/* 2. Motorista Secundário */}
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-700 uppercase flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
+              <div className="bg-[#f4f7fb] p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="font-semibold text-slate-700 flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
                       checked={incluirMotoristaSecundario}
                       onChange={(e) => setIncluirMotoristaSecundario(e.target.checked)}
-                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                      className="rounded h-4 w-4 accent-[#0066cc]"
                     />
-                    Adicionar Motorista Secundário
+                    Adicionar motorista secundário
                   </label>
-                  <span className="text-[11px] text-emerald-700 font-semibold">+ R$ 20,00 / dia</span>
+                  <span className="text-[11px] text-emerald-700 font-semibold whitespace-nowrap">+ R$ 20,00 / dia</span>
                 </div>
 
                 {incluirMotoristaSecundario && (
-                  <div className="space-y-2 pt-2 border-t border-slate-200">
-                    <div>
-                      <span className="block text-slate-600 font-medium mb-1">Nome Completo do Condutor</span>
-                      <input 
+                  <div className="space-y-3 pt-3 border-t border-slate-200/70">
+                    <div className="space-y-1">
+                      <span className="block text-slate-600 font-medium">Nome completo do condutor</span>
+                      <input
                         type="text"
                         placeholder="Nome do motorista secundário"
                         value={nomeMotorista2}
                         onChange={(e) => setNomeMotorista2(e.target.value)}
                         required={incluirMotoristaSecundario}
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs"
+                        className={CAMPO}
                       />
                     </div>
-                    <div>
-                      <span className="block text-slate-600 font-medium mb-1">Número da CNH</span>
-                      <input 
+                    <div className="space-y-1">
+                      <span className="block text-slate-600 font-medium">Número da CNH</span>
+                      <input
                         type="text"
                         placeholder="CNH do motorista secundário"
                         value={cnhMotorista2}
                         onChange={(e) => setCnhMotorista2(e.target.value)}
                         required={incluirMotoristaSecundario}
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono"
+                        className={`${CAMPO} font-mono`}
                       />
                     </div>
                   </div>
@@ -315,27 +348,27 @@ export function AbaCatalogo({
               </div>
 
               {/* 3. Devolver em Outra Agência */}
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="font-bold text-slate-700 uppercase flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
+              <div className="bg-[#f4f7fb] p-4 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="font-semibold text-slate-700 flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
                       checked={outraAgencia}
                       onChange={(e) => setOutraAgencia(e.target.checked)}
-                      className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4"
+                      className="rounded h-4 w-4 accent-[#0066cc]"
                     />
-                    Devolver em Outra Agência
+                    Devolver em outra agência
                   </label>
-                  <span className="text-[11px] text-emerald-700 font-semibold">+ R$ 120,00 (Taxa fixa)</span>
+                  <span className="text-[11px] text-emerald-700 font-semibold whitespace-nowrap">+ R$ 120,00 (taxa fixa)</span>
                 </div>
 
                 {outraAgencia && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <span className="block text-slate-600 font-medium mb-1">Agência de Destino / Devolução</span>
-                    <select 
+                  <div className="pt-3 border-t border-slate-200/70 space-y-1">
+                    <span className="block text-slate-600 font-medium">Agência de destino / devolução</span>
+                    <select
                       value={agenciaDestino}
                       onChange={(e) => setAgenciaDestino(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs"
+                      className={CAMPO}
                     >
                       <option value="Rio de Janeiro - Capital">Rio de Janeiro - Capital</option>
                       <option value="Campos dos Goytacazes - Centro">Campos dos Goytacazes - Centro</option>
@@ -346,46 +379,46 @@ export function AbaCatalogo({
                 )}
               </div>
 
-              {/* RESUMO DO ORÇAMENTO TOTAL */}
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-1.5 text-slate-800">
-                <div className="flex justify-between text-xs">
-                  <span>Diárias ({diasModal}x):</span>
+              {/* Resumo do orçamento */}
+              <div className="bg-[#0066cc] text-white rounded-2xl p-5 space-y-1.5">
+                <div className="flex justify-between text-xs text-white/85">
+                  <span>Diárias ({diasModal}x)</span>
                   <span>R$ {subtotalDiarias.toFixed(2)}</span>
                 </div>
                 {incluirMotoristaSecundario && (
-                  <div className="flex justify-between text-xs text-emerald-700">
-                    <span>Motorista Secundário:</span>
+                  <div className="flex justify-between text-xs text-white/85">
+                    <span>Motorista secundário</span>
                     <span>+ R$ {taxaMotorista2.toFixed(2)}</span>
                   </div>
                 )}
                 {outraAgencia && (
-                  <div className="flex justify-between text-xs text-emerald-700">
-                    <span>Taxa Outra Agência:</span>
+                  <div className="flex justify-between text-xs text-white/85">
+                    <span>Taxa outra agência</span>
                     <span>+ R$ {taxaOutraAgencia.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="border-t border-blue-200 pt-2 flex justify-between font-extrabold text-sm text-blue-900">
-                  <span>Valor Total Estimado:</span>
-                  <span>R$ {valorTotalGeral.toFixed(2)}</span>
+                <div className="border-t border-white/25 pt-2.5 mt-1 flex justify-between items-baseline font-bold">
+                  <span className="text-sm">Valor total estimado</span>
+                  <span className="text-xl">R$ {valorTotalGeral.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Botões de Ação */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={fecharModalReserva}
                   disabled={enviandoReserva}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition"
+                  className="flex-1 bg-[#eef3f9] hover:bg-[#dcebf9] text-slate-700 font-semibold py-2.5 rounded-full text-sm transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={enviandoReserva}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition shadow-sm disabled:opacity-50"
+                  className="flex-1 bg-[#0066cc] hover:bg-[#0052a3] text-white font-semibold py-2.5 rounded-full text-sm transition disabled:opacity-50"
                 >
-                  {enviandoReserva ? 'Enviando...' : 'Confirmar Reserva 📋'}
+                  {enviandoReserva ? 'Enviando...' : 'Confirmar reserva'}
                 </button>
               </div>
 
