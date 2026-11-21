@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { API_BASE_URL } from '../services/api';
 
 export function useAgenciaDashboard(propAgencia, propLogout) {
   const { user, logout } = useContext(AuthContext);
@@ -56,7 +57,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
 
   const carregarFrota = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/catalogo/veiculos');
+      const res = await fetch(`${API_BASE_URL}/api/catalogo/veiculos`);
       if (res.ok) {
         const dados = await res.json();
         setFrota(dados.filter(v => v.agencia_id === agenciaLogada.id));
@@ -69,7 +70,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   const carregarEmergencias = async () => {
     if (!agenciaLogada?.id) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/agencias/${agenciaLogada.id}/emergencias`);
+      const res = await fetch(`${API_BASE_URL}/api/agencias/${agenciaLogada.id}/emergencias`);
       if (res.ok) setEmergencias(await res.json());
     } catch (err) {
       console.error("Erro ao carregar emergências:", err);
@@ -79,7 +80,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   const carregarReservasPendentes = async () => {
     if (!agenciaLogada?.id) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/agencias/${agenciaLogada.id}/reservas-pendentes`);
+      const res = await fetch(`${API_BASE_URL}/api/agencias/${agenciaLogada.id}/reservas-pendentes`);
       if (res.ok) setReservasPendentes(await res.json());
     } catch (err) {
       console.error("Erro ao carregar reservas pendentes:", err);
@@ -89,7 +90,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   const carregarManutencoes = async () => {
     if (!agenciaLogada?.id) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/agencias/${agenciaLogada.id}/manutencoes`);
+      const res = await fetch(`${API_BASE_URL}/api/agencias/${agenciaLogada.id}/manutencoes`);
       if (res.ok) setManutencoes(await res.json());
     } catch (err) {
       console.error("Erro ao carregar manutenções:", err);
@@ -104,7 +105,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     formData.append('origem', origem);
 
     try {
-      const res = await fetch(`http://localhost:8000/api/veiculos/${veiculoId}/manutencao`, {
+      const res = await fetch(`${API_BASE_URL}/api/veiculos/${veiculoId}/manutencao`, {
         method: 'PUT',
         body: formData
       });
@@ -129,7 +130,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     const formData = new FormData();
     formData.append('aprovar', aprovar);
     try {
-      const res = await fetch(`http://localhost:8000/api/reservas/${reservaId}/responder`, {
+      const res = await fetch(`${API_BASE_URL}/api/reservas/${reservaId}/responder`, {
         method: 'PUT',
         body: formData
       });
@@ -182,7 +183,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
       if (fotoOdometro) formData.append('foto_odometro', fotoOdometro);
       if (fotoVeiculo) formData.append('foto_veiculo', fotoVeiculo);
 
-      const res = await fetch(`http://localhost:8000/api/veiculos/${veiculoVistoria.id}/vistoria`, {
+      const res = await fetch(`${API_BASE_URL}/api/veiculos/${veiculoVistoria.id}/vistoria`, {
         method: 'PUT',
         body: formData
       });
@@ -213,7 +214,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
       formData.append('novo_status', novoStatus);
       formData.append('status', novoStatus);
 
-      const res = await fetch(`http://localhost:8000/api/emergencias/${emergenciaId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/emergencias/${emergenciaId}/status`, {
         method: 'PUT',
         body: formData
       });
@@ -233,7 +234,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
 
   const carregarMarcasFipe = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/fipe/marcas');
+      const res = await fetch(`${API_BASE_URL}/api/fipe/marcas`);
       if (res.ok) setMarcas(await res.json());
     } catch (err) {
       console.error("Erro marcas FIPE:", err);
@@ -250,7 +251,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     if (!codigo) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/fipe/marcas/${codigo}/modelos`);
+      const res = await fetch(`${API_BASE_URL}/api/fipe/marcas/${codigo}/modelos`);
       if (res.ok) {
         const dados = await res.json();
         setModelos(dados.modelos || dados);
@@ -268,7 +269,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     if (!codigo) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/fipe/marcas/${marcaCodigo}/modelos/${codigo}/anos`);
+      const res = await fetch(`${API_BASE_URL}/api/fipe/marcas/${marcaCodigo}/modelos/${codigo}/anos`);
       if (res.ok) setAnos(await res.json());
     } catch (err) {
       console.error("Erro anos FIPE:", err);
@@ -290,7 +291,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/api/agencias/${agenciaLogada.id}/veiculos`, {
+      const res = await fetch(`${API_BASE_URL}/api/agencias/${agenciaLogada.id}/veiculos`, {
         method: 'POST',
         body: formData
       });

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback, carregarMinhasEmergencias }) {
   const [tipoEmergencia, setTipoEmergencia] = useState('ACIDENTE');
@@ -11,7 +12,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
       formData.append('novo_status', 'RESOLVIDO');
       formData.append('status', 'RESOLVIDO');
 
-      const res = await fetch(`http://localhost:8000/api/emergencias/${emergenciaId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/emergencias/${emergenciaId}/status`, {
         method: 'PUT',
         body: formData
       });
@@ -61,7 +62,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
       formData.append('latitude', lat);
       formData.append('longitude', lng);
 
-      fetch('http://localhost:8000/api/emergencias', {
+      fetch(`${API_BASE_URL}/api/emergencias`, {
         method: 'POST',
         body: formData
       })

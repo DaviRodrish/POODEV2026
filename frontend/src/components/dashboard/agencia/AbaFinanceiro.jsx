@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 const CARD = 'bg-white rounded-3xl p-6 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]';
 
@@ -17,7 +18,7 @@ export function AbaFinanceiro({ agenciaLogada, setMensagemFeedback }) {
     const agenciaId = agenciaLogada?.id || 1;
     setCarregando(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/agencias/${agenciaId}/financeiro`);
+      const res = await fetch(`${API_BASE_URL}/api/agencias/${agenciaId}/financeiro`);
       if (res.ok) {
         const dados = await res.json();
         if (dados.chave_pix) {
@@ -48,7 +49,7 @@ export function AbaFinanceiro({ agenciaLogada, setMensagemFeedback }) {
     setSalvandoPix(true);
     const agenciaId = agenciaLogada?.id || 1;
     try {
-      const res = await fetch(`http://localhost:8000/api/agencias/${agenciaId}/chave-pix`, {
+      const res = await fetch(`${API_BASE_URL}/api/agencias/${agenciaId}/chave-pix`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chave_pix: chavePixInput })
@@ -80,7 +81,7 @@ export function AbaFinanceiro({ agenciaLogada, setMensagemFeedback }) {
 
   const handleConfirmarRecebimentoPix = async (reservaId) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/reservas/${reservaId}/confirmar-pix`, {
+      const res = await fetch(`${API_BASE_URL}/api/reservas/${reservaId}/confirmar-pix`, {
         method: 'PUT'
       });
       if (res.ok) {

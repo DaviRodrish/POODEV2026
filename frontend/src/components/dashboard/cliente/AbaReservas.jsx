@@ -1,11 +1,12 @@
 import React from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinhasReservas, carregarCatalogo }) {
 
   const handleDevolver = async (reservaId) => {
     setMensagemFeedback('');
     try {
-      const res = await fetch(`http://localhost:8000/api/reservas/${reservaId}/devolver`, {
+      const res = await fetch(`${API_BASE_URL}/api/reservas/${reservaId}/devolver`, {
         method: 'PUT'
       });
       if (res.ok) {
@@ -24,7 +25,7 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
   const handleConfirmarPagamentoPix = async (reservaId) => {
     setMensagemFeedback('');
     try {
-      const res = await fetch(`http://localhost:8000/api/reservas/${reservaId}/pagar`, {
+      const res = await fetch(`${API_BASE_URL}/api/reservas/${reservaId}/pagar`, {
         method: 'PUT'
       });
       if (res.ok) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 const CARD = 'bg-white rounded-3xl shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]';
 
@@ -13,7 +14,7 @@ export function AbaClientes({ setMensagemFeedback }) {
   const carregarClientes = async () => {
     setCarregando(true);
     try {
-      const res = await fetch('http://localhost:8000/api/clientes');
+      const res = await fetch(`${API_BASE_URL}/api/clientes`);
       if (res.ok) {
         const data = await res.json();
         setClientes(Array.isArray(data) ? data : []);
@@ -43,7 +44,7 @@ export function AbaClientes({ setMensagemFeedback }) {
   const handleAlterarStatus = async (clienteId, novoStatus, motivo = '') => {
     setEnviando(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/clientes/${clienteId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/clientes/${clienteId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: novoStatus, motivo })

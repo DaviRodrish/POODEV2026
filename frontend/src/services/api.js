@@ -1,8 +1,9 @@
 import axios from 'axios';
 
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const api = axios.create({
-  // Altere para a porta em que o teu backend Python (FastAPI/Flask) estiver a rodar (ex: 8000)
-  baseURL: 'http://localhost:8000', 
+  baseURL: API_BASE_URL, 
   headers: {
     'Content-Type': 'application/json',
   },

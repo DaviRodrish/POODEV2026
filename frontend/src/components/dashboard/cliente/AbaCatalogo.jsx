@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../../../services/api';
 
 export function AbaCatalogo({
   veiculos,
@@ -78,7 +79,7 @@ export function AbaCatalogo({
     form.append("valor_total", valorTotalGeral);
 
     try {
-      const res = await fetch("http://localhost:8000/api/reservas", { method: "POST", body: form });
+      const res = await fetch(`${API_BASE_URL}/api/reservas`, { method: "POST", body: form });
       if (res.ok) {
         setMensagemFeedback({ tipo: 'sucesso', texto: 'Reserva solicitada com sucesso!' });
         carregarMinhasReservas();
@@ -142,7 +143,7 @@ export function AbaCatalogo({
 
                   <div className="w-full h-36 bg-slate-100 rounded-xl overflow-hidden relative flex items-center justify-center">
                     <img 
-                      src={`http://localhost:8000/api/veiculos/${v.id}/foto`}
+                      src={`${API_BASE_URL}/api/veiculos/${v.id}/foto`}
                       alt={`${v.marca} ${v.modelo}`}
                       className="w-full h-full object-cover"
                       onError={(e) => {

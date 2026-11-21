@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_BASE_URL } from '../services/api';
 
 export function useClienteDashboard() {
   const [abaAtiva, setAbaAtiva] = useState('catalogo');
@@ -19,7 +20,7 @@ export function useClienteDashboard() {
 
   const carregarCatalogo = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/catalogo/veiculos');
+      const res = await fetch(`${API_BASE_URL}/api/catalogo/veiculos`);
       if (res.ok) setVeiculos(await res.json());
     } catch (err) {
       console.error("Erro ao carregar veículos:", err);
@@ -29,7 +30,7 @@ export function useClienteDashboard() {
   const carregarMinhasReservas = async () => {
     if (!usuarioLogado?.id) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/clientes/${usuarioLogado.id}/reservas`);
+      const res = await fetch(`${API_BASE_URL}/api/clientes/${usuarioLogado.id}/reservas`);
       if (res.ok) setMinhasReservas(await res.json());
     } catch (err) {
       console.error("Erro ao carregar reservas:", err);
@@ -39,7 +40,7 @@ export function useClienteDashboard() {
   const carregarMinhasEmergencias = async () => {
     if (!usuarioLogado?.id) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/clientes/${usuarioLogado.id}/emergencias`);
+      const res = await fetch(`${API_BASE_URL}/api/clientes/${usuarioLogado.id}/emergencias`);
       if (res.ok) setMinhasEmergencias(await res.json());
     } catch (err) {
       console.error("Erro ao carregar emergências:", err);
