@@ -1,6 +1,7 @@
 import React from 'react';
 
 const ICONES = {
+  'visao-geral':'M4 4h7v7H4z M13 4h7v4h-7z M13 11h7v9h-7z M4 14h7v6H4z',
   emergencias: 'M12 3 2.5 20h19L12 3z M12 10v4 M12 17h.01',
   reservas: 'M9 4h6v3H9z M7 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1 M8 12h8 M8 16h5',
   frota: 'M4 16v-3l2-5h12l2 5v3 M4 16h16v3H4z M7 19v1 M17 19v1 M7 13h.01 M17 13h.01',
@@ -29,6 +30,7 @@ function Icone({ nome }) {
 
 // Exportado para o menu horizontal no mobile (AgenciaDashboard)
 export const ABAS = [
+  { id: 'visao-geral', rotulo: 'Visão Geral'},
   { id: 'emergencias', rotulo: 'Alertas SOS' },
   { id: 'reservas', rotulo: 'Solicitações' },
   { id: 'frota', rotulo: 'Frota & FIPE' },

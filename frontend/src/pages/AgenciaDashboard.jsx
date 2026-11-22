@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAgenciaDashboard } from '../hooks/useAgenciaDashboard';
+import { AbaVisaoGeral } from '../components/dashboard/agencia/AbaVisaoGeral';
 import { SidebarAgencia, ABAS } from '../components/dashboard/agencia/SidebarAgencia';
 import { AbaEmergencias } from '../components/dashboard/agencia/AbaEmergencias';
 import { AbaReservas } from '../components/dashboard/agencia/AbaReservas';
@@ -9,12 +10,13 @@ import { AbaFinanceiro } from '../components/dashboard/agencia/AbaFinanceiro';
 import { AbaClientes } from '../components/dashboard/agencia/AbaClientes';
 
 const TITULOS = {
-  emergencias: 'Central de Emergências & SOS',
+ 'visao-geral': 'Visão Geral da Agência',
+  emergencias: 'Central de Emergências e SOS',
   reservas: 'Solicitações de Reserva de Clientes',
   frota: 'Gestão de Frota e Tabela FIPE',
-  manutencao: 'Oficina & Histórico de Manutenção',
-  clientes: 'Gestão & Histórico de Clientes',
-  financeiro: 'Financeiro & Histórico',
+  manutencao: 'Oficina e Histórico de Manutenção',
+  clientes: 'Gestão e Histórico de Clientes',
+  financeiro: 'Financeiro e Histórico',
 };
 
 export function AgenciaDashboard(props) {
@@ -79,6 +81,7 @@ export function AgenciaDashboard(props) {
           {dash.abaAtiva === 'manutencao' && <AbaManutencao {...dash} />}
           {dash.abaAtiva === 'clientes' && <AbaClientes {...dash} />}
           {dash.abaAtiva === 'financeiro' && <AbaFinanceiro {...dash} />}
+          {dash.abaAtiva === 'visao-geral' && <AbaVisaoGeral {...dash} />} 
         </div>
       </main>
     </div>

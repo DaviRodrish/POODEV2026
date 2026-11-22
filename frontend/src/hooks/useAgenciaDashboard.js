@@ -7,7 +7,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   const agenciaLogada = propAgencia || user;
   const onLogout = propLogout || logout;
   
-  const [abaAtiva, setAbaAtiva] = useState('emergencias');
+  const [abaAtiva, setAbaAtiva] = useState('visao-geral');
   const [frota, setFrota] = useState([]);
   const [emergencias, setEmergencias] = useState([]);
   const [reservasPendentes, setReservasPendentes] = useState([]);
@@ -316,7 +316,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     frota, emergencias, reservasPendentes, manutencoes, carregando,
     marcas, modelos, anos,
     placa, setPlaca, marcaCodigo, modeloCodigo, anoCodigo, setAnoCodigo,
-    valorDiaria, setValorDiaria, mensagemFeedback,
+    valorDiaria, setValorDiaria, mensagemFeedback,setMensagemFeedback,
     modalVistoriaAberto, veiculoVistoria, novoKmInput, setNovoKmInput,
     novoCombustivelInput, setNovoCombustivelInput, erroVistoriaModal, salvandoVistoria,
     selecionarMarca, selecionarModelo, cadastrarVeiculo,
