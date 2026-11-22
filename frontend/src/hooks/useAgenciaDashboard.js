@@ -49,6 +49,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
 
   const [abaAtiva, setAbaAtiva] = useState('visao-geral');
   const [frota, setFrota] = useState([]);
+  const [alertasFipe, setAlertasFipe] = useState({});
   const [emergencias, setEmergencias] = useState([]);
   const [reservasPendentes, setReservasPendentes] = useState([]);
   const [manutencoes, setManutencoes] = useState([]);
@@ -118,8 +119,8 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   useEffect(() => {
     if (!agenciaLogada?.id) return;
     carregarDadosIniciais();
+    carregarAlertasFipe();
 
-    // [SOS 4/4] Polling (10s) busca emergencias em routers/emergencias.py
     const intervaloEmergencias = setInterval(() => {
       carregarEmergencias();
       carregarReservasPendentes();
@@ -177,6 +178,16 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
       }
     } catch (err) {
       console.error("Erro ao carregar frota:", err);
+    }
+  };
+
+  const carregarAlertasFipe = async () => {
+    if (!agenciaLogada?.id) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/agencias/${agenciaLogada.id}/alertas-fipe`);
+      if (res.ok) setAlertasFipe(await res.json());
+    } catch (err) {
+      console.error("Erro ao carregar alertas FIPE:", err);
     }
   };
 
@@ -415,6 +426,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
         setPlaca('');
         setValorDiaria('');
         carregarFrota();
+        carregarAlertasFipe();
       } else {
         setMensagemFeedback({ tipo: 'erro', texto: dados.detail || 'Erro ao cadastrar veículo.' });
       }
@@ -426,7 +438,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   return {
     agenciaLogada, onLogout,
     abaAtiva, setAbaAtiva,
-    frota, emergencias, reservasPendentes, manutencoes, carregando,
+    frota, alertasFipe, emergencias, reservasPendentes, manutencoes, carregando,
     marcas, modelos, anos,
     placa, setPlaca, marcaCodigo, modeloCodigo, anoCodigo, setAnoCodigo,
     valorDiaria, setValorDiaria, mensagemFeedback, setMensagemFeedback,

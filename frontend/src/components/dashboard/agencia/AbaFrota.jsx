@@ -7,7 +7,7 @@ const CAMPO =
   'w-full bg-[#f4f7fb] border border-transparent rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/20 focus:outline-none disabled:opacity-50 transition';
 
 export function AbaFrota({
-  frota, marcas, modelos, anos,
+  frota, alertasFipe = {}, marcas, modelos, anos,
   placa, setPlaca, marcaCodigo, modeloCodigo, anoCodigo, setAnoCodigo,
   valorDiaria, setValorDiaria,
   selecionarMarca, selecionarModelo, cadastrarVeiculo, abrirModalVistoria,
@@ -20,6 +20,12 @@ export function AbaFrota({
   const [fotoVeiculoVistoria, setFotoVeiculoVistoria] = useState(null);
   const [loadingOcr, setLoadingOcr] = useState(false);
   const [statusOcr, setStatusOcr] = useState({ texto: '', tipo: '' });
+  const [somenteAlertaFipe, setSomenteAlertaFipe] = useState(false);
+
+  const totalAlertasFipe = frota.filter(v => alertasFipe[String(v.id)]?.alerta_fipe).length;
+  const frotaExibida = somenteAlertaFipe
+    ? frota.filter(v => alertasFipe[String(v.id)]?.alerta_fipe)
+    : frota;
 
   const fecharModalComLimpeza = () => {
     setFotoOdometro(null);
@@ -121,9 +127,9 @@ export function AbaFrota({
 
           <div className="space-y-1.5">
             <label className={LABEL}>Foto do veículo</label>
-            <input 
-              type="file" 
-              accept="image/png, image/jpeg, image/webp" 
+            <input
+              type="file"
+              accept="image/png, image/jpeg, image/webp"
               onChange={(e) => setFotoVeiculoCadastro(e.target.files[0] || null)}
               className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#e6f0fa] file:text-[#0066cc] hover:file:bg-[#d2e5f7] cursor-pointer"
             />
@@ -146,7 +152,18 @@ export function AbaFrota({
           <span className="bg-[#e6f0fa] text-[#0066cc] px-3.5 py-1.5 rounded-full text-xs font-bold">Total: {frota.length}</span>
         </div>
 
-        {frota.length === 0 ? (
+        {totalAlertasFipe > 0 && (
+          <button
+            type="button"
+            onClick={() => setSomenteAlertaFipe(prev => !prev)}
+            className="w-full mb-5 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 text-xs font-semibold transition text-left"
+          >
+            <span>⚠️ {totalAlertasFipe} veículo(s) acima de 15% de desvalorização FIPE</span>
+            <span className="underline">{somenteAlertaFipe ? 'Mostrar todos' : 'Filtrar'}</span>
+          </button>
+        )}
+
+        {frotaExibida.length === 0 ? (
           <div className="py-12 text-center text-slate-400 text-sm bg-[#f4f7fb] rounded-2xl">Nenhum veículo cadastrado nesta agência.</div>
         ) : (
           <div className="overflow-x-auto rounded-2xl ring-1 ring-slate-100">
@@ -157,6 +174,7 @@ export function AbaFrota({
                   <th className="p-4">Marca / Modelo</th>
                   <th className="p-4">Ano</th>
                   <th className="p-4">Diária</th>
+                  <th className="p-4">Tabela FIPE</th>
                   <th className="p-4">Odômetro</th>
                   <th className="p-4">Combustível</th>
                   <th className="p-4">Status</th>
@@ -164,33 +182,46 @@ export function AbaFrota({
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-slate-100">
-                {frota.map(v => (
-                  <tr key={v.id} className="hover:bg-[#f8fafd] transition">
-                    <td className="p-4 font-bold font-mono text-slate-900">{v.placa}</td>
-                    <td className="p-4 text-slate-700 font-medium">{v.marca} - {v.modelo}</td>
-                    <td className="p-4 text-slate-600">{v.ano}</td>
-                    <td className="p-4 font-bold text-[#0066cc]">R$ {v.valor_diaria}</td>
-                    <td className="p-4 text-slate-700 font-mono text-xs">{(v.quilometragem || 0).toLocaleString('pt-BR')} km</td>
-                    <td className="p-4 text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 bg-slate-100 rounded-full h-2 overflow-hidden">
-                          <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.round((v.combustivel_nivel || 1) * 100)}%` }}></div>
+                {frotaExibida.map(v => {
+                  const fipe = alertasFipe[String(v.id)];
+                  return (
+                    <tr key={v.id} className="hover:bg-[#f8fafd] transition">
+                      <td className="p-4 font-bold font-mono text-slate-900">{v.placa}</td>
+                      <td className="p-4 text-slate-700 font-medium">{v.marca} - {v.modelo}</td>
+                      <td className="p-4 text-slate-600">{v.ano}</td>
+                      <td className="p-4 font-bold text-[#0066cc]">R$ {v.valor_diaria}</td>
+                      <td className="p-4">
+                        <div className="text-xs font-semibold text-slate-700">
+                          {fipe?.valor_fipe_atual || (String(v.fipeP || '').includes('R$') ? v.fipeP : '—')}
                         </div>
-                        <span className="text-xs">{Math.round((v.combustivel_nivel || 1) * 100)}%</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${v.status === 'disponível' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
-                        {v.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <button onClick={() => abrirModalVistoria(v)} className="bg-[#e6f0fa] hover:bg-[#d2e5f7] text-[#0066cc] text-xs px-4 py-2 rounded-full font-semibold transition">
-                        Atualizar dados
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        {fipe?.alerta_fipe && (
+                          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">
+                            ⚠️ -{fipe.desvalorizacao_pct}% FIPE
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-slate-700 font-mono text-xs">{(v.quilometragem || 0).toLocaleString('pt-BR')} km</td>
+                      <td className="p-4 text-slate-600">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.round((v.combustivel_nivel || 1) * 100)}%` }}></div>
+                          </div>
+                          <span className="text-xs">{Math.round((v.combustivel_nivel || 1) * 100)}%</span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${v.status === 'disponível' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                          {v.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <button onClick={() => abrirModalVistoria(v)} className="bg-[#e6f0fa] hover:bg-[#d2e5f7] text-[#0066cc] text-xs px-4 py-2 rounded-full font-semibold transition">
+                          Atualizar dados
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

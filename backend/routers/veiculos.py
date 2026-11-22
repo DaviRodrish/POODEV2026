@@ -8,6 +8,7 @@ from backend.database.repositorio_fotos import (
     colecao_fotos_veiculos,
     colecao_fotos_odometro,
 )
+from backend.modelos.fipe import ServicoFipe
 from backend.modelos.veiculo import VeiculoFipe
 from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
 from backend.modelos.agencia import AgenciaModel
@@ -15,6 +16,7 @@ from backend.modelos.agencia import AgenciaModel
 router = APIRouter(prefix="/api", tags=["Veículos"])
 
 # [CO2 1/3] RF06/RF21 - Catalogo no Postgres -> veiculo_agencia.py
+
 @router.get("/catalogo/veiculos")
 def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
     veiculos = db.query(VeiculoAgenciaModel).all()
@@ -45,6 +47,13 @@ def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
             "foto_url": f"/api/veiculos/{v.id}/foto"
         })
     return resultado
+
+
+@router.get("/agencias/{agencia_id}/alertas-fipe")
+def listar_alertas_fipe_agencia(agencia_id: int, db: Session = Depends(obter_conexao)):
+    veiculos = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.agencia_id == agencia_id).all()
+    servico = ServicoFipe()
+    return {str(v.id): v.verificar_alerta_fipe(servico) for v in veiculos}
 
 
 @router.post("/agencias/{agencia_id}/veiculos")
@@ -197,14 +206,14 @@ async def atualizar_vistoria_veiculo(
 def obter_foto_veiculo(veiculo_id: int):
     if colecao_fotos_veiculos is None:
         raise HTTPException(status_code=500, detail="MongoDB Atlas não está conectado.")
-    
+
     doc = colecao_fotos_veiculos.find_one(
         {"veiculo_id": int(veiculo_id), "tipo_documento": "FOTO_VEICULO"},
         sort=[("enviado_em", -1)]
     )
     if not doc or "dados_binarios" not in doc:
         raise HTTPException(status_code=404, detail="Foto não encontrada.")
-    
+
     return Response(
         content=doc["dados_binarios"],
         media_type=doc.get("content_type", "image/jpeg")
@@ -215,14 +224,14 @@ def obter_foto_veiculo(veiculo_id: int):
 def obter_foto_odometro_veiculo(veiculo_id: int):
     if colecao_fotos_odometro is None:
         raise HTTPException(status_code=500, detail="MongoDB Atlas não está conectado.")
-    
+
     doc = colecao_fotos_odometro.find_one(
         {"veiculo_id": int(veiculo_id), "tipo_documento": "ODOMETRO_VISTORIA"},
         sort=[("enviado_em", -1)]
     )
     if not doc or "dados_binarios" not in doc:
         raise HTTPException(status_code=404, detail="Foto de odômetro não encontrada.")
-    
+
     return Response(
         content=doc["dados_binarios"],
         media_type=doc.get("content_type", "image/jpeg")

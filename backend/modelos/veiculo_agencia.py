@@ -6,6 +6,8 @@ from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from backend.database.conexao_postgres import Base
 from backend.modelos.emissao import Alcool, Diesel, Eletrico, Flex, GNV, Gasolina, Hibrido
 from backend.modelos.enums import StatusManutencao
+from backend.modelos.fipe import ServicoFipe
+from backend.modelos.veiculo import Veiculo, VeiculoFipe
 from backend.modelos.veiculo_regras import (
     CAPACIDADE_TANQUE_PADRAO,
     calcular_taxa_reabastecimento,
@@ -63,6 +65,8 @@ class VeiculoAgenciaModel(Base):
         self.status = StatusVeiculoDB.MANUTENCAO
 
     # ---- regras (delegam ao módulo compartilhado) ----
+    colocar_em_manutencao = enviar_para_manutencao
+
     def abastecer(self, nivel):
         self.combustivel_nivel = validar_nivel(nivel)
 
@@ -107,6 +111,29 @@ class VeiculoAgenciaModel(Base):
     def calcular_emissao(self, km=100):
         estrategia = _ESTRAT.get(self.tipo_combustivel, _ESTRAT["Gasolina"])
         return estrategia.calc(km, self.cilindrada)
+
+    def verificar_alerta_fipe(self, servico_fipe=None) -> dict:
+        servico = servico_fipe or ServicoFipe()
+        atual_str, ref_str = servico.consultar_valores_comparativos(
+            self.marca, self.modelo, self.ano, self.fipeP
+        )
+        valor_atual = VeiculoFipe._converter_valor_para_float(atual_str)
+        valor_ref = VeiculoFipe._converter_valor_para_float(ref_str)
+        if valor_ref <= 0 or valor_atual <= 0:
+            return {"alerta_fipe": False, "desvalorizacao_pct": 0.0}
+
+        veiculo_dominio = Veiculo(
+            self.placa, self.marca, self.modelo, self.ano,
+            self.quilometragem or 0, self.tipo_combustivel,
+            valor_mercado=valor_ref, valor_fipe=valor_atual,
+        )
+        queda = (valor_ref - valor_atual) / valor_ref
+        return {
+            "alerta_fipe": veiculo_dominio.alerta_fipe(),
+            "desvalorizacao_pct": round(queda * 100, 2),
+            "valor_fipe_atual": atual_str,
+            "valor_fipe_referencia": ref_str,
+        }
 
 
 # [MANUT 3/3] RF16/RF19 - Maquina de estados: Pendente -> Em Andamento -> Concluida

@@ -33,6 +33,7 @@ class ServicoFipe:
         self._http_get = http_get
         self._base_url = base_url
         self._timeout = timeout
+        self._marcas = None
 
     def _requisicao_com_retry(self, url):
         for tentativa in range(1, self.TENTATIVAS + 1):
@@ -73,3 +74,30 @@ class ServicoFipe:
     def consultar_preco(self, codigo_marca, codigo_modelo, codigo_ano):
         url = f"{self._base_url}/marcas/{codigo_marca}/modelos/{codigo_modelo}/anos/{codigo_ano}"
         return self._requisicao_com_retry(url)
+
+    def consultar_valores_comparativos(self, marca, modelo, ano, fipe_p=None):
+        self._marcas = self._marcas or self.listar_marcas()
+        marca_obj = next((m for m in self._marcas if marca.lower() in m["nome"].lower()), None)
+        if not marca_obj:
+            return None, None
+
+        modelos = self.listar_modelos(marca_obj["codigo"])
+        modelo_obj = next((m for m in modelos if m["nome"].lower() == modelo.lower()), None)
+        if not modelo_obj:
+            return None, None
+
+        anos = self.listar_anos(marca_obj["codigo"], modelo_obj["codigo"])
+        ano_atual = next((a for a in anos if str(a["codigo"]).startswith(f"{ano}-")), None)
+        ano_seguinte = next((a for a in anos if str(a["codigo"]).startswith(f"{ano + 1}-")), None)
+        if not ano_seguinte:
+            return None, None
+
+        dado_seguinte = self.consultar_preco(marca_obj["codigo"], modelo_obj["codigo"], ano_seguinte["codigo"])
+        valor_seguinte = dado_seguinte.get("Valor") if dado_seguinte else None
+
+        valor_atual = fipe_p if (fipe_p and "R$" in str(fipe_p)) else None
+        if not valor_atual and ano_atual:
+            dado_atual = self.consultar_preco(marca_obj["codigo"], modelo_obj["codigo"], ano_atual["codigo"])
+            valor_atual = dado_atual.get("Valor") if dado_atual else None
+
+        return valor_atual, valor_seguinte
