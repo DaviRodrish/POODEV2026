@@ -21,6 +21,7 @@ class VeiculoStatusError(ValueError):
     pass
 
 
+# Contrato (Protocol): desacopla Locacao entre Veiculo (dominio) e VeiculoAgenciaModel (ORM)
 class VeiculoLocavel(Protocol):
 
     def esta_disponivel(self) -> bool: ...
@@ -43,6 +44,7 @@ def validar_nivel(nivel) -> float:
     return round(float(nivel), 2)
 
 
+# [COMBUSTIVEL] RF14 - Calcula litros faltantes e taxa de reabastecimento (+15%)
 def calcular_taxa_reabastecimento(nivel_atual, nivel_retorno,
                                   capacidade_tanque=CAPACIDADE_TANQUE_PADRAO) -> dict:
     nivel_retorno = validar_nivel(nivel_retorno)

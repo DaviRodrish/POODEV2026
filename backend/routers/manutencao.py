@@ -6,12 +6,14 @@ from backend.modelos.veiculo_agencia import VeiculoAgenciaModel, Manutencao
 
 router = APIRouter(prefix="/api", tags=["Manutenção"])
 
+# Historico em memoria (prototipo); status e km_rev do carro persistem no Postgres
 HISTORICO_MANUTENCOES = []
 
 @router.get("/agencias/{agencia_id}/manutencoes")
 def listar_manutencoes_agencia(agencia_id: int):
     return [m for m in HISTORICO_MANUTENCOES if m["agencia_id"] == agencia_id]
 
+# [MANUT 3/3] RF16/RF19 - Inicia/finaliza manutencao via modelos/veiculo_agencia.py
 @router.put("/veiculos/{veiculo_id}/manutencao")
 def gerenciar_manutencao_veiculo(
     veiculo_id: int,

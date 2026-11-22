@@ -25,7 +25,7 @@ def _normalizar(texto) -> str:
     return "".join(c for c in sem_acento if unicodedata.category(c) != "Mn").strip().lower()
 
 
-_ESTRATEGIAS = {
+_ESTRAT = {
     "Elétrico": Eletrico(), "Híbrido": Hibrido(), "Diesel": Diesel(),
     "GNV": GNV(), "Álcool": Alcool(), "Flex": Flex(), "Gasolina": Gasolina(),
 }
@@ -62,8 +62,6 @@ class VeiculoAgenciaModel(Base):
     def enviar_para_manutencao(self):
         self.status = StatusVeiculoDB.MANUTENCAO
 
-    colocar_em_manutencao = enviar_para_manutencao  # nome antigo, mantido por compatibilidade
-
     # ---- regras (delegam ao módulo compartilhado) ----
     def abastecer(self, nivel):
         self.combustivel_nivel = validar_nivel(nivel)
@@ -73,6 +71,7 @@ class VeiculoAgenciaModel(Base):
             self.combustivel_nivel, nivel_retorno, CAPACIDADE_TANQUE_PADRAO
         )
 
+    # [MANUT 2/3] RF19 - revisao a cada 10.000 km
     def precisa_revisao(self):
         limite = self.km_rev or 10000
         return (self.quilometragem or 0) >= limite
@@ -85,6 +84,7 @@ class VeiculoAgenciaModel(Base):
     def cilindrada(self):
         return extrair_cilindrada(self.modelo)
 
+    # [CO2 2/3] Combustivel via modelo + sufixo FIPE
     @property
     def tipo_combustivel(self):
         texto = f"{self.modelo or ''} {self.fipeA or ''}".lower()
@@ -103,11 +103,13 @@ class VeiculoAgenciaModel(Base):
             return "Flex"
         return "Gasolina"
 
+    # [CO2 2/3] RF21 - Aplica Strategy -> emissao.py
     def calcular_emissao(self, km=100):
-        estrategia = _ESTRATEGIAS.get(self.tipo_combustivel, _ESTRATEGIAS["Gasolina"])
+        estrategia = _ESTRAT.get(self.tipo_combustivel, _ESTRAT["Gasolina"])
         return estrategia.calc(km, self.cilindrada)
 
 
+# [MANUT 3/3] RF16/RF19 - Maquina de estados: Pendente -> Em Andamento -> Concluida
 class Manutencao:
     def __init__(self, veiculo, descricao="", origem="REVISAO_KM"):
         if veiculo is None:

@@ -29,6 +29,7 @@ export function AbaFrota({
     fecharModalVistoria();
   };
 
+  // [MANUT 1/3] RF15 - OCR do odometro no navegador (Tesseract.js) -> routers/veiculos.py
   const handleFotoPainelChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;

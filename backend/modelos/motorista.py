@@ -5,12 +5,13 @@ from backend.modelos.condutor import Condutor
 from backend.modelos.enums import StatusCliente
 
 
+# [USUARIO 3/3] RF02 - Motorista secundario: herda Condutor, exige CNH valida
 class Motorista(Condutor):
 
     def __init__(self, nome, email, cpf_str, cnh_num, categoria="B", validade=None,
                  titular=None, senha="123", status=StatusCliente.ATIVO):
         if isinstance(cnh_num, str):
-            # erros de CNH agora propagam (antes eram engolidos por `except Exception`)
+            
             cnh_num = CNH(cnh_num, categoria=categoria, validade=validade)
         if cnh_num is None:
             raise CNHError("Motorista exige CNH.")

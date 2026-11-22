@@ -4,7 +4,6 @@ from datetime import date
 class CNHError(Exception):
     pass
 
-
 class CNH:
 
     CATEGORIAS_VALIDAS = {"A", "B", "C", "D", "E", "AB", "AC", "AD", "AE"}

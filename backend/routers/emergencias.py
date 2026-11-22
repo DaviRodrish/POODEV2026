@@ -8,6 +8,7 @@ from backend.modelos.veiculo_agencia import VeiculoAgenciaModel
 
 router = APIRouter(prefix="/api", tags=["Emergências"])
 
+# [SOS 2/4] RF22/RF25 - Recebe SOS -> valida em modelos/emergencia.py -> salva + manutencao (Postgres)
 @router.post("/emergencias")
 async def emitir_alerta_emergencia(
     locacao_id: int = Form(...),
@@ -46,7 +47,7 @@ async def emitir_alerta_emergencia(
 
         veic_db = db.query(VeiculoAgenciaModel).filter(VeiculoAgenciaModel.id == locacao_db.veiculo_id).first()
         if veic_db:
-            veic_db.colocar_em_manutencao()
+            veic_db.enviar_para_manutencao()
 
         db.add(nova_emergencia)
         db.commit()
@@ -65,6 +66,7 @@ async def emitir_alerta_emergencia(
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+# [SOS 4/4] RF22 - Chamado pelo polling (10s) de useAgenciaDashboard.js -> le tabela emergencias
 @router.get("/agencias/{agencia_id}/emergencias")
 async def listar_emergencias_agencia(
     agencia_id: int,
@@ -87,6 +89,7 @@ async def listar_emergencias_agencia(
     return resultado
 
 
+# [SOS 4/4] Atualiza status: Aberto -> Em Atendimento -> Aguardando Cliente -> Resolvido
 @router.put("/emergencias/{emergencia_id}/status")
 def atualizar_status_emergencia(
     emergencia_id: int,

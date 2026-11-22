@@ -14,6 +14,7 @@ from backend.modelos.agencia import AgenciaModel
 
 router = APIRouter(prefix="/api", tags=["Veículos"])
 
+# [CO2 1/3] RF06/RF21 - Catalogo no Postgres -> veiculo_agencia.py
 @router.get("/catalogo/veiculos")
 def listar_catalogo_veiculos(db: Session = Depends(obter_conexao)):
     veiculos = db.query(VeiculoAgenciaModel).all()
@@ -115,6 +116,7 @@ async def cadastrar_veiculo_agencia(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# [MANUT 2/3] RF05/RF12-RF14 - Salva fotos (MongoDB) + km/combustivel (Postgres) -> checa precisa_revisao()
 @router.put("/veiculos/{veiculo_id}/vistoria")
 async def atualizar_vistoria_veiculo(
     veiculo_id: int,
@@ -174,7 +176,7 @@ async def atualizar_vistoria_veiculo(
     veiculo.quilometragem = int(quilometragem)
     veiculo.combustivel_nivel = round(float(combustivel_nivel), 2)
     if veiculo.precisa_revisao():
-        veiculo.colocar_em_manutencao()
+        veiculo.enviar_para_manutencao()
     db.commit()
     db.refresh(veiculo)
 

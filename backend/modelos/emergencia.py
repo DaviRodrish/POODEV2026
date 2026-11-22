@@ -6,12 +6,13 @@ from backend.database.conexao_postgres import Base
 from backend.modelos.enums import StatusEmergencia, StatusLocacao, TipoEmergencia
 
 
+# RF22-RF25 - Tabela emergencias
 class EmergenciaModel(Base):
     __tablename__ = "emergencias"
 
     id = Column(Integer, primary_key=True, index=True)
     locacao_id = Column(Integer, nullable=False)
-    agencia_id = Column(Integer, nullable=False)  # notifica diretamente a agência dona do carro
+    agencia_id = Column(Integer, nullable=False)  # notifica a agência
     tipo = Column(String(50), nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
@@ -25,6 +26,7 @@ class EmergenciaError(Exception):
     pass
 
 
+# [SOS 3/4] RF22-RF25 - Valida locacao/tipo/GPS e status -> volta para routers
 class Emergencia:
     _LOCACAO_STATUS_VALIDOS = (StatusLocacao.APROVADA, StatusLocacao.ATIVA)
 
@@ -88,6 +90,7 @@ class Emergencia:
     def localizacao(self):
         return (self._latitude, self._longitude)
 
+    # RF25 - Gera protocolo do seguro e manda carro para manutencao
     def acionar_seguro(self):
         if self.seguro_acionado:
             raise EmergenciaError("Seguro ja acionado.")
@@ -96,6 +99,7 @@ class Emergencia:
             self._veiculo.enviar_para_manutencao()
         return self._protocolo_seguro
 
+    # Maquina de estados: Aberto -> Em Atendimento -> Resolvido/Cancelado
     def atender(self):
         if self._status is not StatusEmergencia.ABERTO:
             raise EmergenciaError("Chamado nao aberto.")

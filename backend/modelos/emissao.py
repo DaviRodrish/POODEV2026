@@ -1,5 +1,6 @@
 from abc import ABC
 
+# [CO2 3/3] RF21 - Classe abstrata: filhas so mudam a taxa
 class Emissao(ABC):
     taxa_base = 0.0
 

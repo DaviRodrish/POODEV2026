@@ -35,6 +35,7 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     if (!agenciaLogada?.id) return;
     carregarDadosIniciais();
 
+    // [SOS 4/4] Polling (10s) busca emergencias em routers/emergencias.py
     const intervaloEmergencias = setInterval(() => {
       carregarEmergencias();
       carregarReservasPendentes();

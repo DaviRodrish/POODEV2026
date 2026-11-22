@@ -11,6 +11,7 @@ from backend.security import decrypt_value, encrypt_value
 router = APIRouter(prefix="/api", tags=["Financeiro"])
 
 
+# [PIX 3/3] RF18/RF20 - Soma faturamento das locacoes ATIVA e CONCLUIDA
 @router.get("/agencias/{agencia_id}/financeiro")
 def obter_financeiro_agencia(agencia_id: int, db: Session = Depends(obter_conexao)):
     agencia = db.query(AgenciaModel).get(agencia_id)
@@ -58,6 +59,7 @@ def obter_financeiro_agencia(agencia_id: int, db: Session = Depends(obter_conexa
     }
 
 
+# RF09/RNF04 - Salva chave PIX da agencia cifrada (AES-256-GCM)
 @router.put("/agencias/{agencia_id}/chave-pix")
 def atualizar_chave_pix(agencia_id: int, payload: dict = Body(...), db: Session = Depends(obter_conexao)):
     agencia = db.query(AgenciaModel).get(agencia_id)

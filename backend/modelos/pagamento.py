@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 
+# RF09 - Comprovante imutavel
 @dataclass(frozen=True)
 class Pagamento:
 
@@ -20,19 +21,21 @@ class Pagamento:
             "metodo": self.metodo,
             "valor": self.valor,
             "destino": self.destino,
-            "destino_pix": self.destino,  # compatibilidade com o formato antigo
+            "destino_pix": self.destino,  
             "codigo_copia_cola": self.codigo_copia_cola,
             "data_hora": self.data_hora.isoformat(),
             "mensagem": self.mensagem,
         }
 
 
+# RF09 - Classe abstrata de pagamento
 class MetodoPagamentoStrategy(ABC):
     @abstractmethod
     def processar(self, valor: float, destino: str) -> Pagamento:
         ...
 
 
+# [PIX 2/3] RF09 - Codigo PIX Copia-e-Cola -> volta para routers/reservas.py
 class PagamentoPix(MetodoPagamentoStrategy):
     def processar(self, valor: float, destino: str) -> Pagamento:
         if valor <= 0:

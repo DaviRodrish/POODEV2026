@@ -7,6 +7,7 @@ from backend.modelos.usuario import UsuarioModel, cifrar_documento, proteger_sen
 from backend.security import decrypt_value
 
 
+# [BLOQUEIO 2/2] RF01/RF04/RF27 - Tabela clientes com CPF cifrado + cpf_lookup
 class ClienteModel(UsuarioModel):
     __tablename__ = "clientes"
 
@@ -53,6 +54,7 @@ class ClienteModel(UsuarioModel):
     def pode_alugar(self):
         return self.pode_operar()
 
+    # [BLOQUEIO 2/2] RF27 - Bloqueia/desbloqueia cliente para novas locacoes
     def bloquear(self, motivo):
         self.status = StatusCliente.BLOQUEADO.value
         self.motivo = motivo

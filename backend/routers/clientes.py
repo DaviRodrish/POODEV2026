@@ -33,6 +33,7 @@ def listar_clientes(db: Session = Depends(obter_conexao)):
     return resultado
 
 
+# [BLOQUEIO 1/2] RF27 - Altera status (ATIVO/BLOQUEADO) via modelos/cliente.py -> Postgres
 @router.put("/clientes/{cliente_id}/status")
 def atualizar_status_cliente(cliente_id: int, payload: dict = Body(...), db: Session = Depends(obter_conexao)):
     cliente = db.query(ClienteModel).get(cliente_id)
@@ -62,6 +63,7 @@ def atualizar_status_cliente(cliente_id: int, payload: dict = Body(...), db: Ses
     }
 
 
+# RF17 - Historico de locacoes do cliente
 @router.get("/clientes/{cliente_id}/reservas")
 def listar_reservas_cliente(cliente_id: int, db: Session = Depends(obter_conexao)):
     reservas = db.query(LocacaoModel).filter_by(cliente_id=cliente_id).all()

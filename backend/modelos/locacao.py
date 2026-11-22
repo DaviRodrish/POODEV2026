@@ -18,6 +18,7 @@ _STATUS_PAGAMENTO = {
 }
 
 
+# RF07/RF10 - Tabela locacoes com FKs para clientes, veiculos e agencias
 class LocacaoModel(Base):
     __tablename__ = "locacoes"
 
@@ -49,6 +50,7 @@ class ErroLocacao(Exception):
     pass
 
 
+# [RESERVA 2/2] RF02/RF07/RF08/RF10/RF11 - Regras da locacao, taxas e ciclo de status
 class Locacao:
     def __init__(self, cli: Condutor, veic: VeiculoLocavel, ini, fim, diaria, ori, dest, taxa=150.0):
         if fim < ini:
@@ -79,7 +81,7 @@ class Locacao:
         self._km_volta = None
         self._motoristas_secundarios = []
 
-    # ---- leitura ----
+    # leitura
     @property
     def cli(self): return self._cli
     @property
@@ -125,7 +127,7 @@ class Locacao:
     def total(self):
         return (self.qtd_dias * self._diaria) + self.taxa_extra
 
-    # ---- regras ----
+    # regras
     @staticmethod
     def _validar_cnh(cnh: CNH, data_ref, categoria="B"):
         if not cnh.esta_valida(data_ref):
@@ -137,7 +139,7 @@ class Locacao:
         if self._status is not esperado:
             raise ErroLocacao(mensagem)
 
-    # ---- transições de estado: o veículo muda por métodos, não por atribuição ----
+    # transições de estado: o veículo muda por métodos, não por atribuição
     def retirar(self, km):
         self._exigir_status(StatusLocacao.RESERVADA, "Locacao nao reservada.")
         if km < 0:

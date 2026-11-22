@@ -34,6 +34,7 @@ def cifrar_documento(valor):
     return encrypt_value(norm), doc_lookup_hash(norm)
 
 
+# [USUARIO 1/3] RF01/RNF04 - Mixin compartilhado: autenticar() unico para dominio e ORM
 class AutenticavelMixin:
 
     def autenticar(self, senha_tentativa):
@@ -42,6 +43,7 @@ class AutenticavelMixin:
         return verify_password(str(senha_tentativa), self.senha)
 
 
+# [USUARIO 1/3] ORM abstrato: sem tabela usuarios, herdado por clientes/agencias
 class UsuarioModel(AutenticavelMixin, Base):
     __abstract__ = True
 
@@ -57,12 +59,13 @@ class UsuarioModel(AutenticavelMixin, Base):
         return True
 
 
+# [USUARIO 1/3] RF01 - Classe abstrata Usuario -> herdada por Condutor e Agencia
 class Usuario(AutenticavelMixin, ABC):
     def __init__(self, nome, email, senha, status=StatusCliente.ATIVO, tipo_perfil="usuario"):
         self.nome = str(nome).strip()
         self.email = str(email).strip().lower()
         self.senha = proteger_senha(senha)
-        self._status = StatusCliente(status)  # aceita "ATIVO" ou StatusCliente.ATIVO
+        self._status = StatusCliente(status)
         self.motivo = None
         self._tipo_perfil = tipo_perfil
 

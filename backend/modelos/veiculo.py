@@ -2,7 +2,7 @@ from backend.modelos.enums import Status, TipoVeiculo
 from backend.modelos.fipe import ServicoFipe
 from backend.modelos.veiculo_regras import (
     CAPACIDADE_TANQUE_PADRAO,
-    NivelCombustivelError,  # noqa: F401  (reexportado)
+    NivelCombustivelError, 
     OdometroError,
     VeiculoStatusError,
     calcular_taxa_reabastecimento,

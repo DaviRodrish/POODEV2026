@@ -6,6 +6,7 @@ from backend.modelos.enums import StatusCliente
 from backend.modelos.usuario import Usuario
 
 
+# [USUARIO 2/3] RF04 - Classe abstrata de quem dirige (CPF + CNH) -> Cliente e Motorista
 class Condutor(Usuario, ABC):
 
     def __init__(self, nome, email, cpf, cnh=None, senha="123",

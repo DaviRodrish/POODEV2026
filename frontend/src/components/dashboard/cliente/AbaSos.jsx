@@ -74,6 +74,7 @@ export function AbaSos({ minhasReservas, minhasEmergencias, setMensagemFeedback,
     }
   };
 
+  // [SOS 1/4] RF22/RF23 - Envia GPS + tipo via POST /api/emergencias -> routers/emergencias.py
   const enviarSos = async (e) => {
     e.preventDefault();
     setMensagemFeedback('');

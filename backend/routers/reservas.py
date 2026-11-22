@@ -29,6 +29,7 @@ def mascarar_cnh(cnh_armazenada: str | None, visiveis_fim: int = 3) -> str:
     return ("•" * (len(valor) - visiveis_fim)) + valor[-visiveis_fim:]
 
 
+# [RESERVA 1/2] RF07/RF08/RF10 - Valida em modelos/locacao.py -> cria reserva PENDENTE (Postgres)
 @router.post("/reservas")
 async def solicitar_reserva(
     cliente_id: int = Form(...),
@@ -148,6 +149,7 @@ def responder_reserva(reserva_id: int, aprovar: str = Form(...), db: Session = D
     return {"ok": True, "status": loc.status}
 
 
+# [PIX 1/3] RF09 - Gera recibo em modelos/pagamento.py -> status AGUARDANDO_CONFIRMACAO
 @router.put("/reservas/{reserva_id}/pagar")
 def pagar_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
     loc = db.query(LocacaoModel).get(reserva_id)
@@ -171,6 +173,7 @@ def pagar_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
     }
 
 
+# [PIX 3/3] RF09 - Agencia confirma PIX -> status ATIVA (entra em routers/financeiro.py)
 @router.put("/reservas/{reserva_id}/confirmar-pix")
 def confirmar_pix_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
     loc = db.query(LocacaoModel).get(reserva_id)
@@ -185,6 +188,7 @@ def confirmar_pix_reserva(reserva_id: int, db: Session = Depends(obter_conexao))
     }
 
 
+# [PIX 3/3] Devolucao: status CONCLUIDA e libera carro (ou manutencao se precisa_revisao)
 @router.put("/reservas/{reserva_id}/devolver")
 def devolver_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
     loc = db.query(LocacaoModel).get(reserva_id)
@@ -193,6 +197,6 @@ def devolver_reserva(reserva_id: int, db: Session = Depends(obter_conexao)):
     if veic.status != "manutenção" and not veic.precisa_revisao():
         veic.status = "disponível"
     else:
-        veic.colocar_em_manutencao()
+        veic.enviar_para_manutencao()
     db.commit()
     return {"ok": True}
