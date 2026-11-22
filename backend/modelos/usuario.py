@@ -17,22 +17,13 @@ _PREFIXO_HASH = "pbkdf2_sha256$"
 
 
 def proteger_senha(senha) -> str:
-    """Garante que a senha esteja no formato de hash que verify_password exige.
 
-    Idempotente: se já vier hasheada (ex.: pela camada de API ou lida do banco),
-    devolve como está. Sem isso, uma senha em texto puro como "123" nunca
-    autenticaria, pois verify_password só aceita "pbkdf2_sha256$salt$hash".
-    """
     texto = str(senha)
     return texto if texto.startswith(_PREFIXO_HASH) else hash_password(texto)
 
 
 def cifrar_documento(valor):
-    """Devolve (valor_cifrado, hash_de_busca) para CPF/CNPJ.
 
-    Se o valor já vier cifrado (leitura do banco) ele é preservado.
-    Centraliza a lógica que estava duplicada em ClienteModel e AgenciaModel.
-    """
     if valor is None:
         return None, None
     texto = str(valor).strip()
@@ -44,7 +35,6 @@ def cifrar_documento(valor):
 
 
 class AutenticavelMixin:
-    """Autenticação única, compartilhada por domínio e ORM (antes divergiam)."""
 
     def autenticar(self, senha_tentativa):
         if not self.senha or senha_tentativa is None:
@@ -82,7 +72,6 @@ class Usuario(AutenticavelMixin, ABC):
 
     @property
     def tipo_perfil(self):
-        # agora é propriedade (string) em todas as classes, inclusive nos models
         return self._tipo_perfil
 
     def pode_operar(self):

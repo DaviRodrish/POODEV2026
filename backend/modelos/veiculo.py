@@ -12,11 +12,6 @@ from backend.modelos.veiculo_regras import (
 
 
 class VeiculoFipe:
-    """Dados de um veículo conforme a tabela FIPE (antes: `VeiculoModel`, nome enganoso).
-
-    O construtor não faz mais I/O: recebe os dados prontos. Use `consultar()`
-    para buscá-los, injetando o serviço (mockável nos testes).
-    """
 
     def __init__(self, placa, marca_id, modelo_id, ano_id, dados_fipe: dict):
         if not dados_fipe:
@@ -70,7 +65,6 @@ class VeiculoFipe:
 
 
 class Veiculo:
-    """Veículo de domínio. Implementa o contrato `VeiculoLocavel`."""
 
     def __init__(self, placa, marca, modelo, ano, quilometragem, combustivel,
                  valor_mercado, valor_fipe, capacidade_tanque=CAPACIDADE_TANQUE_PADRAO,

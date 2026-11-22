@@ -3,7 +3,6 @@ class CPFError(Exception):
 
 
 class CPF:
-    """Value object imutável: valida o CPF na construção."""
 
     def __init__(self, valor):
         if not isinstance(valor, str):

@@ -6,7 +6,6 @@ class CNHError(Exception):
 
 
 class CNH:
-    """Value object imutável da habilitação."""
 
     CATEGORIAS_VALIDAS = {"A", "B", "C", "D", "E", "AB", "AC", "AD", "AE"}
     _CATEGORIAS_CARRO = frozenset("BCDE")

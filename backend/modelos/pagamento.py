@@ -5,7 +5,6 @@ from datetime import datetime
 
 @dataclass(frozen=True)
 class Pagamento:
-    """Comprovante imutável de um pagamento (substitui o dict solto)."""
 
     metodo: str
     valor: float

@@ -54,7 +54,6 @@ class Emergencia:
             raise EmergenciaError("Longitude invalida.")
 
         self._locacao = locacao
-        # o veículo pode ser passado explicitamente; senão vem da locação de domínio
         self._veiculo = veiculo if veiculo is not None else getattr(locacao, "veic", None)
         self._tipo = tipo_enum
         self._latitude = lat

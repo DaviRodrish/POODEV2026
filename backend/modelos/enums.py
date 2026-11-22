@@ -2,17 +2,12 @@ from enum import Enum
 
 
 class _StrEnum(str, Enum):
-    """Enum que também é str: StatusLocacao.ATIVA == "ATIVA".
-
-    Assim o mesmo enum serve para o domínio e para as colunas String do ORM,
-    sem precisar de conversões nem de comparações misturando str e enum.
-    """
 
     def __str__(self):
         return self.value
 
 
-class TipoVeiculo(_StrEnum):  # antes: "Veiculo" (conflitava com a classe Veiculo)
+class TipoVeiculo(_StrEnum):  
     NOVO = "NOVO"
     USADO = "USADO"
 
@@ -39,12 +34,10 @@ class StatusCliente(_StrEnum):
 
 
 class StatusLocacao(_StrEnum):
-    # estados do fluxo de aprovação/pagamento (antes só existiam como strings soltas)
     PENDENTE = "PENDENTE"
     APROVADA = "APROVADA"
     AGUARDANDO_CONFIRMACAO = "AGUARDANDO_CONFIRMACAO"
     RECUSADA = "RECUSADA"
-    # estados do ciclo de vida da locação
     RESERVADA = "RESERVADA"
     ATIVA = "ATIVA"
     CONCLUIDA = "CONCLUIDA"

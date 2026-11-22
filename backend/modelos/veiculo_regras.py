@@ -22,7 +22,6 @@ class VeiculoStatusError(ValueError):
 
 
 class VeiculoLocavel(Protocol):
-    """Contrato que a Locacao exige de um veículo (substitui os hasattr)."""
 
     def esta_disponivel(self) -> bool: ...
     def alugar(self) -> None: ...

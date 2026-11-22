@@ -6,7 +6,6 @@ from backend.modelos.enums import StatusCliente
 
 
 class Motorista(Condutor):
-    """Motorista secundário: igual ao Cliente, mas a CNH é obrigatória."""
 
     def __init__(self, nome, email, cpf_str, cnh_num, categoria="B", validade=None,
                  titular=None, senha="123", status=StatusCliente.ATIVO):

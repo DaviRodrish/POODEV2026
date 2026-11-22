@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 MARCAS_DESEJADAS = (
     "fiat", "chevrolet", "volkswagen", "toyota",
-    "hyundai", "jeep", "renault", "honda", "nissan", "byd",
+    "hyundai", "jeep", "renault", "honda", "nissan", "byd", "ford"
 )
 
 MARCAS_FALLBACK = [
@@ -20,15 +20,11 @@ MARCAS_FALLBACK = [
     {"codigo": "25", "nome": "Honda"},  # TODO: mesmo código de Chevrolet, conferir na FIPE
     {"codigo": "41", "nome": "Nissan"},
     {"codigo": "245", "nome": "BYD"},
+    {"codigo": "42", "nome": "Ford"}
 ]
 
 
 class ServicoFipe:
-    """Cliente da API FIPE.
-
-    Agora é uma instância: o `http_get` pode ser trocado por um mock nos testes
-    e quem usa o serviço o recebe por injeção de dependência.
-    """
 
     BASE_URL = "https://parallelum.com.br/fipe/api/v1/carros"
     TENTATIVAS = 3

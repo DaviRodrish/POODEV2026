@@ -3,7 +3,6 @@ class CNPJError(Exception):
 
 
 class CNPJ:
-    """Value object imutável: valida tamanho, repetição e dígitos verificadores."""
 
     _PESOS_1 = (5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)
     _PESOS_2 = (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)

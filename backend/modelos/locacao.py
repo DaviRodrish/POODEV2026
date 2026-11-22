@@ -63,7 +63,7 @@ class Locacao:
             raise ErroLocacao("Veiculo indisponivel.")
 
         cnh = cli.obter_cnh()
-        if cnh is not None:  # CNH do titular é opcional no cadastro
+        if cnh is not None:  
             self._validar_cnh(cnh, fim)
 
         self._cli = cli

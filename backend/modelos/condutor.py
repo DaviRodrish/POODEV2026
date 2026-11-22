@@ -7,10 +7,6 @@ from backend.modelos.usuario import Usuario
 
 
 class Condutor(Usuario, ABC):
-    """Base comum de quem dirige: tem CPF e (opcionalmente) CNH.
-
-    Elimina a duplicação entre Cliente e Motorista.
-    """
 
     def __init__(self, nome, email, cpf, cnh=None, senha="123",
                  status=StatusCliente.ATIVO, tipo_perfil="condutor"):
@@ -45,7 +41,6 @@ class Condutor(Usuario, ABC):
             raise TypeError("cnh deve ser str, CNH ou None.")
 
     def obter_cnh(self):
-        """Contrato usado pela Locacao (mesmo nome no ClienteModel)."""
         return self._cnh
 
     def get_documento(self):

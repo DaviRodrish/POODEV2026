@@ -15,7 +15,6 @@ from backend.modelos.veiculo_regras import (
 
 
 class StatusVeiculoDB:
-    """Valores gravados na coluna `status` (mantidos como já estão no banco)."""
     DISPONIVEL = "disponível"
     LOCADO = "locado"
     MANUTENCAO = "manutenção"
@@ -49,7 +48,6 @@ class VeiculoAgenciaModel(Base):
     fipeP = Column(String, nullable=True)
     fipeA = Column(String, nullable=True)
 
-    # ---- contrato VeiculoLocavel (mesmos nomes do Veiculo de domínio) ----
     def esta_disponivel(self) -> bool:
         return _normalizar(self.status) == "disponivel"
 
