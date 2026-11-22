@@ -194,9 +194,19 @@ export function AbaFrota({
                         <div className="text-xs font-semibold text-slate-700">
                           {fipe?.valor_fipe_atual || (String(v.fipeP || '').includes('R$') ? v.fipeP : '—')}
                         </div>
-                        {fipe?.alerta_fipe && (
-                          <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700">
-                            ⚠️ -{fipe.desvalorizacao_pct}% FIPE
+                        {fipe && (
+                          <span
+                            className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                              fipe.alerta_fipe
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {fipe.alerta_fipe
+                              ? `⚠️ -${fipe.desvalorizacao_pct}%`
+                              : fipe.desvalorizacao_pct > 0
+                                ? `-${fipe.desvalorizacao_pct}%`
+                                : '0%'}
                           </span>
                         )}
                       </td>
