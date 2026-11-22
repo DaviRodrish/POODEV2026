@@ -35,7 +35,6 @@ export function AbaFrota({
     fecharModalVistoria();
   };
 
-  // [MANUT 1/3] RF15 - OCR do odometro no navegador (Tesseract.js) -> routers/veiculos.py
   const handleFotoPainelChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -174,7 +173,7 @@ export function AbaFrota({
                   <th className="p-4">Marca / Modelo</th>
                   <th className="p-4">Ano</th>
                   <th className="p-4">Diária</th>
-                  <th className="p-4">Tabela FIPE</th>
+                  <th className="p-4">Desvalorização</th>
                   <th className="p-4">Odômetro</th>
                   <th className="p-4">Combustível</th>
                   <th className="p-4">Status</th>
@@ -191,12 +190,11 @@ export function AbaFrota({
                       <td className="p-4 text-slate-600">{v.ano}</td>
                       <td className="p-4 font-bold text-[#0066cc]">R$ {v.valor_diaria}</td>
                       <td className="p-4">
-                        <div className="text-xs font-semibold text-slate-700">
-                          {fipe?.valor_fipe_atual || (String(v.fipeP || '').includes('R$') ? v.fipeP : '—')}
-                        </div>
-                        {fipe && (
+                        {!fipe ? (
+                          <span className="text-xs text-slate-400">Calculando...</span>
+                        ) : (
                           <span
-                            className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                            className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
                               fipe.alerta_fipe
                                 ? 'bg-rose-100 text-rose-700'
                                 : 'bg-slate-100 text-slate-600'
