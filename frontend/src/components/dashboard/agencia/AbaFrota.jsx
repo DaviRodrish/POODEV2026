@@ -201,7 +201,7 @@ export function AbaFrota({
                             }`}
                           >
                             {fipe.alerta_fipe
-                              ? `⚠️ -${fipe.desvalorizacao_pct}%`
+                              ? ` -${fipe.desvalorizacao_pct}%`
                               : fipe.desvalorizacao_pct > 0
                                 ? `-${fipe.desvalorizacao_pct}%`
                                 : '0%'}
