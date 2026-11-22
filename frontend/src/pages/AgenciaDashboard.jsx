@@ -10,7 +10,7 @@ import { AbaFinanceiro } from '../components/dashboard/agencia/AbaFinanceiro';
 import { AbaClientes } from '../components/dashboard/agencia/AbaClientes';
 
 const TITULOS = {
- 'visao-geral': 'Visão Geral da Agência',
+  'visao-geral': 'Visão Geral da Agência',
   emergencias: 'Central de Emergências e SOS',
   reservas: 'Solicitações de Reserva de Clientes',
   frota: 'Gestão de Frota e Tabela FIPE',
@@ -21,6 +21,7 @@ const TITULOS = {
 
 export function AgenciaDashboard(props) {
   const dash = useAgenciaDashboard(props.agenciaLogada, props.onLogout);
+  const temAlertaAberto = (dash.emergencias || []).some((e) => e.status === 'ABERTO');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#e3eefa] via-[#f0f5fb] to-[#f4f6f9] flex font-sans text-slate-900">
@@ -60,6 +61,19 @@ export function AgenciaDashboard(props) {
         </header>
 
         <div className="p-5 sm:p-8 max-w-7xl mx-auto w-full space-y-6">
+          {dash.somAlertaAtivo && dash.somBloqueado && temAlertaAberto && (
+            <div className="flex items-center justify-between gap-3 px-5 py-3 rounded-2xl text-xs font-medium bg-amber-50 text-amber-900 border border-amber-200">
+              <span>Há alerta SOS aberto e o som está aguardando interação no navegador.</span>
+              <button
+                type="button"
+                onClick={() => dash.dispararAlertaSonoro('teste')}
+                className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-full font-semibold transition"
+              >
+                Ativar som
+              </button>
+            </div>
+          )}
+
           {dash.mensagemFeedback && (
             <div
               className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-medium ${
@@ -81,7 +95,7 @@ export function AgenciaDashboard(props) {
           {dash.abaAtiva === 'manutencao' && <AbaManutencao {...dash} />}
           {dash.abaAtiva === 'clientes' && <AbaClientes {...dash} />}
           {dash.abaAtiva === 'financeiro' && <AbaFinanceiro {...dash} />}
-          {dash.abaAtiva === 'visao-geral' && <AbaVisaoGeral {...dash} />} 
+          {dash.abaAtiva === 'visao-geral' && <AbaVisaoGeral {...dash} />}
         </div>
       </main>
     </div>

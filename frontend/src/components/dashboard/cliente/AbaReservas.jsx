@@ -1,6 +1,65 @@
 import React from 'react';
 import { API_BASE_URL } from '../../../services/api';
 
+const normalizarStatus = (status) => {
+  if (!status) return '';
+  return String(status)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .trim();
+};
+
+const ESTILOS_STATUS = {
+  PENDENTE: {
+    label: 'Pendente',
+    badge: 'bg-amber-100 text-amber-800 ring-1 ring-amber-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-amber-200/80',
+  },
+  AGUARDANDO_CONFIRMACAO: {
+    label: 'Aguardando confirmação',
+    badge: 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-yellow-200/80',
+  },
+  APROVADA: {
+    label: 'Aguardando pagamento',
+    badge: 'bg-sky-100 text-sky-800 ring-1 ring-sky-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-sky-200/80',
+  },
+  ATIVA: {
+    label: 'Ativa',
+    badge: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-emerald-200/80',
+  },
+  CONCLUIDA: {
+    label: 'Concluída',
+    badge: 'bg-indigo-100 text-indigo-800 ring-1 ring-indigo-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-indigo-200/80',
+  },
+  CANCELADA: {
+    label: 'Cancelada',
+    badge: 'bg-rose-100 text-rose-800 ring-1 ring-rose-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-rose-200/80',
+  },
+  RECUSADA: {
+    label: 'Recusada',
+    badge: 'bg-rose-100 text-rose-800 ring-1 ring-rose-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-rose-200/80',
+  },
+};
+
+const getConfigStatus = (statusRaw) => {
+  const chave = normalizarStatus(statusRaw);
+  if (ESTILOS_STATUS[chave]) {
+    return ESTILOS_STATUS[chave];
+  }
+  return {
+    label: statusRaw || 'Indefinido',
+    badge: 'bg-purple-100 text-purple-800 ring-1 ring-purple-300',
+    card: 'bg-[#f4f7fb] ring-1 ring-purple-200/80',
+  };
+};
+
 export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinhasReservas, carregarCatalogo }) {
   const handleDevolver = async (reservaId) => {
     setMensagemFeedback('');
@@ -56,20 +115,16 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
             const temMotorista2 = reserva.motorista_secundario === true || reserva.motorista_secundario === 'true';
             const outraAgencia = reserva.outra_agencia === true || reserva.outra_agencia === 'true';
             const chavePix = reserva.agencia_pix || '12.345.678/0001-90';
+            const statusNormalizado = normalizarStatus(reserva.status);
+            const configStatus = getConfigStatus(reserva.status);
 
             return (
-              <div key={reserva.id} className="bg-[#f4f7fb] rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div key={reserva.id} className={`${configStatus.card} rounded-2xl p-5 flex flex-col justify-between gap-4 transition`}>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center gap-2">
                     <span className="text-sm font-bold text-slate-900">Reserva #{reserva.id}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      reserva.status === 'ATIVA' ? 'bg-emerald-100 text-emerald-700' :
-                      reserva.status === 'AGUARDANDO_CONFIRMACAO' ? 'bg-amber-100 text-amber-800' :
-                      reserva.status === 'APROVADA' ? 'bg-blue-100 text-blue-700' :
-                      reserva.status === 'RECUSADA' ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-700'
-                    }`}>
-                      {reserva.status === 'AGUARDANDO_CONFIRMACAO' ? 'Aguardando confirmação' :
-                       reserva.status === 'APROVADA' ? 'Aguardando pagamento' : reserva.status}
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${configStatus.badge}`}>
+                      {configStatus.label}
                     </span>
                   </div>
 
@@ -113,7 +168,7 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
                   </div>
                 </div>
 
-                {reserva.status === 'APROVADA' && (
+                {statusNormalizado === 'APROVADA' && (
                   <div className="bg-[#0066cc] text-white rounded-2xl p-4 space-y-3">
                     <div className="flex justify-between items-center text-xs">
                       <span className="font-semibold">Pagar com a chave PIX da agência</span>
@@ -147,7 +202,7 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
                   </div>
                 )}
 
-                {reserva.status === 'AGUARDANDO_CONFIRMACAO' && (
+                {statusNormalizado === 'AGUARDANDO_CONFIRMACAO' && (
                   <div className="bg-amber-50 rounded-2xl p-4 text-xs space-y-1">
                     <div className="font-bold text-amber-900">Pagamento PIX informado</div>
                     <p className="text-[11px] text-amber-700">
@@ -156,7 +211,7 @@ export function AbaReservas({ minhasReservas, setMensagemFeedback, carregarMinha
                   </div>
                 )}
 
-                {reserva.status === 'ATIVA' && (
+                {statusNormalizado === 'ATIVA' && (
                   <button
                     onClick={() => handleDevolver(reserva.id)}
                     className="w-full py-2.5 bg-[#0066cc] hover:bg-[#0052a3] text-white rounded-full text-sm font-semibold transition"

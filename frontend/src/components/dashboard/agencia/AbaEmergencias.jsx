@@ -7,34 +7,85 @@ const COR_STATUS = {
   RESOLVIDO: 'bg-emerald-100 text-emerald-700',
 };
 
-export function AbaEmergencias({ emergencias, carregando, atualizarStatusEmergencia }) {
-  const totalAlertasAbertos = Array.isArray(emergencias) ? emergencias.filter(e => e.status === 'ABERTO').length : 0;
+export function AbaEmergencias({
+  emergencias,
+  carregando,
+  atualizarStatusEmergencia,
+  somAlertaAtivo = true,
+  somBloqueado = false,
+  alternarSomAlerta,
+  dispararAlertaSonoro,
+}) {
+  const listaEmergencias = Array.isArray(emergencias) ? emergencias : [];
+  const totalAlertasAbertos = listaEmergencias.filter((e) => e.status === 'ABERTO').length;
 
   return (
     <section className="bg-white rounded-3xl p-6 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.35)]">
-      <div className="flex items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h2 className="text-lg font-bold text-slate-900">Monitoramento de Ocorrências</h2>
           <p className="text-sm text-slate-500">Alertas SOS enviados pelos clientes em circulação</p>
         </div>
-        {totalAlertasAbertos > 0 && (
-          <span className="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-3.5 py-1.5 rounded-full text-xs font-bold">
-            <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-            {totalAlertasAbertos} ativo(s)
-          </span>
-        )}
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {totalAlertasAbertos > 0 && (
+            <span className="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-3.5 py-1.5 rounded-full text-xs font-bold">
+              <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+              {totalAlertasAbertos} ativo(s)
+            </span>
+          )}
+
+          {alternarSomAlerta && (
+            <button
+              type="button"
+              onClick={alternarSomAlerta}
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
+                somAlertaAtivo
+                  ? 'bg-[#e6f0fa] text-[#0066cc] hover:bg-[#d7e8fa]'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {somAlertaAtivo ? 'Som ligado' : 'Som mudo'}
+            </button>
+          )}
+
+          {somAlertaAtivo && dispararAlertaSonoro && (
+            <button
+              type="button"
+              onClick={() => dispararAlertaSonoro('teste')}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+            >
+              Testar som
+            </button>
+          )}
+        </div>
       </div>
+
+      {somAlertaAtivo && somBloqueado && totalAlertasAbertos > 0 && dispararAlertaSonoro && (
+        <div className="mb-5 bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-2xl text-xs flex items-center justify-between gap-3">
+          <span>
+            O navegador bloqueou o som automático. Clique em <strong>Liberar som</strong> para ativar o aviso sonoro.
+          </span>
+          <button
+            type="button"
+            onClick={() => dispararAlertaSonoro('teste')}
+            className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-full font-semibold transition"
+          >
+            Liberar som
+          </button>
+        </div>
+      )}
 
       {carregando ? (
         <div className="py-12 text-center text-slate-400 text-sm">Carregando alertas...</div>
-      ) : !emergencias || emergencias.length === 0 ? (
+      ) : listaEmergencias.length === 0 ? (
         <div className="bg-emerald-50 text-emerald-800 px-5 py-4 rounded-2xl text-sm font-medium flex items-center gap-3">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
           Nenhum alerta de emergência registrado no momento. Frota segura!
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {emergencias.map((alerta) => (
+          {listaEmergencias.map((alerta) => (
             <div key={alerta.id} className="bg-[#fdf3f4] rounded-2xl p-5 flex flex-col justify-between gap-4">
               <div className="space-y-3">
                 <div className="flex justify-between items-center gap-2">
@@ -68,6 +119,7 @@ export function AbaEmergencias({ emergencias, carregando, atualizarStatusEmergen
                 <div>
                   {alerta.status === 'ABERTO' && (
                     <button
+                      type="button"
                       onClick={() => atualizarStatusEmergencia(alerta.id, 'EM_ATENDIMENTO')}
                       className="bg-[#0066cc] hover:bg-[#0052a3] text-white text-xs px-4 py-2 rounded-full font-semibold transition"
                     >
@@ -77,6 +129,7 @@ export function AbaEmergencias({ emergencias, carregando, atualizarStatusEmergen
 
                   {alerta.status === 'EM_ATENDIMENTO' && (
                     <button
+                      type="button"
                       onClick={() => atualizarStatusEmergencia(alerta.id, 'AGUARDANDO_CLIENTE')}
                       className="bg-amber-500 hover:bg-amber-600 text-white text-xs px-4 py-2 rounded-full font-semibold transition"
                     >

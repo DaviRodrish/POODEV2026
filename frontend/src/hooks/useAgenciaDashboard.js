@@ -1,12 +1,52 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { API_BASE_URL } from '../services/api';
+
+export function tocarSomEmergencia(tipo = 'alerta') {
+  if (typeof window === 'undefined') return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+
+  try {
+    const ctx = new AudioCtx();
+    const agora = ctx.currentTime;
+    const pulsos = tipo === 'teste' ? [0, 0.18] : [0, 0.22, 0.44];
+
+    pulsos.forEach((offset, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      const freqInicial = tipo === 'teste' ? 660 : idx % 2 === 0 ? 880 : 660;
+      const freqFinal = tipo === 'teste' ? 880 : idx % 2 === 0 ? 660 : 880;
+
+      osc.frequency.setValueAtTime(freqInicial, agora + offset);
+      osc.frequency.exponentialRampToValueAtTime(freqFinal, agora + offset + 0.14);
+
+      gain.gain.setValueAtTime(0.001, agora + offset);
+      gain.gain.exponentialRampToValueAtTime(0.18, agora + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, agora + offset + 0.16);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(agora + offset);
+      osc.stop(agora + offset + 0.17);
+    });
+
+    setTimeout(() => {
+      ctx.close().catch(() => {});
+    }, 1000);
+  } catch {
+    // Bloqueio de áudio pelo navegador antes de interação do usuário
+  }
+}
 
 export function useAgenciaDashboard(propAgencia, propLogout) {
   const { user, logout } = useContext(AuthContext);
   const agenciaLogada = propAgencia || user;
   const onLogout = propLogout || logout;
-  
+
   const [abaAtiva, setAbaAtiva] = useState('visao-geral');
   const [frota, setFrota] = useState([]);
   const [emergencias, setEmergencias] = useState([]);
@@ -31,6 +71,50 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
   const [erroVistoriaModal, setErroVistoriaModal] = useState('');
   const [salvandoVistoria, setSalvandoVistoria] = useState(false);
 
+  const [somAlertaAtivo, setSomAlertaAtivo] = useState(true);
+  const [somBloqueado, setSomBloqueado] = useState(false);
+  const idsAbertosVistosRef = useRef(new Set());
+  const inicializouAlertasRef = useRef(false);
+
+  const dispararAlertaSonoro = useCallback(
+    (modo = 'alerta') => {
+      if (!somAlertaAtivo) return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      const ctxTemp = new AudioCtx();
+      if (ctxTemp.state === 'suspended') {
+        ctxTemp
+          .resume()
+          .then(() => {
+            setSomBloqueado(false);
+            ctxTemp.close().catch(() => {});
+            tocarSomEmergencia(modo);
+          })
+          .catch(() => {
+            setSomBloqueado(true);
+            ctxTemp.close().catch(() => {});
+          });
+      } else {
+        setSomBloqueado(false);
+        ctxTemp.close().catch(() => {});
+        tocarSomEmergencia(modo);
+      }
+    },
+    [somAlertaAtivo]
+  );
+
+  const alternarSomAlerta = useCallback(() => {
+    setSomAlertaAtivo((prev) => {
+      const proximo = !prev;
+      setSomBloqueado(false);
+      if (proximo) {
+        setTimeout(() => tocarSomEmergencia('teste'), 0);
+      }
+      return proximo;
+    });
+  }, []);
+
   useEffect(() => {
     if (!agenciaLogada?.id) return;
     carregarDadosIniciais();
@@ -43,6 +127,34 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
 
     return () => clearInterval(intervaloEmergencias);
   }, [agenciaLogada?.id]);
+
+  useEffect(() => {
+    if (carregando) return;
+
+    const abertos = (Array.isArray(emergencias) ? emergencias : []).filter(
+      (e) => e.status === 'ABERTO'
+    );
+    const idsAtuais = new Set(abertos.map((e) => e.id));
+
+    if (!inicializouAlertasRef.current) {
+      inicializouAlertasRef.current = true;
+      idsAbertosVistosRef.current = idsAtuais;
+      if (idsAtuais.size > 0 && somAlertaAtivo) {
+        dispararAlertaSonoro('alerta');
+      }
+      return;
+    }
+
+    const chegouNovoAlerta = [...idsAtuais].some(
+      (id) => !idsAbertosVistosRef.current.has(id)
+    );
+
+    idsAbertosVistosRef.current = idsAtuais;
+
+    if (chegouNovoAlerta && somAlertaAtivo) {
+      dispararAlertaSonoro('alerta');
+    }
+  }, [emergencias, carregando, somAlertaAtivo, dispararAlertaSonoro]);
 
   const carregarDadosIniciais = async () => {
     setCarregando(true);
@@ -194,9 +306,9 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
         if (onSucessoExtra) onSucessoExtra();
         carregarFrota();
         carregarManutencoes();
-        setMensagemFeedback({ 
-          tipo: 'sucesso', 
-          texto: `Vistoria de ${veiculoVistoria.placa} concluída.` 
+        setMensagemFeedback({
+          tipo: 'sucesso',
+          texto: `Vistoria de ${veiculoVistoria.placa} concluída.`
         });
       } else {
         const dadosErro = await res.json();
@@ -317,11 +429,12 @@ export function useAgenciaDashboard(propAgencia, propLogout) {
     frota, emergencias, reservasPendentes, manutencoes, carregando,
     marcas, modelos, anos,
     placa, setPlaca, marcaCodigo, modeloCodigo, anoCodigo, setAnoCodigo,
-    valorDiaria, setValorDiaria, mensagemFeedback,setMensagemFeedback,
+    valorDiaria, setValorDiaria, mensagemFeedback, setMensagemFeedback,
     modalVistoriaAberto, veiculoVistoria, novoKmInput, setNovoKmInput,
     novoCombustivelInput, setNovoCombustivelInput, erroVistoriaModal, salvandoVistoria,
     selecionarMarca, selecionarModelo, cadastrarVeiculo,
     responderReserva, abrirModalVistoria, fecharModalVistoria, handleSalvarVistoria,
-    atualizarStatusEmergencia, gerenciarManutencao
+    atualizarStatusEmergencia, gerenciarManutencao,
+    somAlertaAtivo, somBloqueado, alternarSomAlerta, dispararAlertaSonoro,
   };
 }
